@@ -1,6 +1,6 @@
 import { NextAuthOptions, DefaultSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "@/lib/prisma";
+import clientPromise from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
 
 declare module "next-auth" {
@@ -31,8 +31,11 @@ export const authOptions: NextAuthOptions = {
         }
 
         // 🛡️ EXPLICIT DATABASE QUERY (No Caching)
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email.toLowerCase() },
+        const client = await clientPromise;
+        const db = client.db(process.env.MONGODB_DB);
+
+        const user = await db.collection("users").findOne({ 
+          email: credentials.email.toLowerCase() 
         });
 
         if (!user) {
@@ -57,7 +60,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         return {
-          id: user.id,
+          id: user._id.toString(),
           email: user.email,
           name: user.name,
           role: user.role as any,

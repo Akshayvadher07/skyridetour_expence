@@ -18,3 +18,20 @@ export const bookingSchema = z.object({
 
 export type WarehouseInput = z.infer<typeof warehouseSchema>;
 export type BookingInput = z.infer<typeof bookingSchema>;
+
+export const signupSchema = z.object({
+  email: z.string().email("Invalid email identity"),
+  password: z.string().min(6, "Credentials must meet 6-char security minimum"),
+  name: z.string().min(2, "Full name is required"),
+  role: z.enum(["OWNER", "CLIENT"]),
+  phone: z.string().min(10, "Valid phone number required"),
+  location: z.string().optional(),
+  companyName: z.string().optional(),
+  warehouseCount: z.coerce.number().optional(),
+  city: z.string().optional(),
+  businessType: z.string().optional(),
+  gstNumber: z.string().optional(),
+  requirements: z.string().optional(),
+});
+
+export type SignupInput = z.infer<typeof signupSchema>;
