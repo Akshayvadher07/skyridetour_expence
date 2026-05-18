@@ -81,26 +81,40 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user, trigger }) {
-      if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.approvalStatus = (user as any).approvalStatus;
+      try {
+        if (user) {
+          token.id = user.id;
+          token.role = user.role;
+          token.approvalStatus = (user as any).approvalStatus;
+        }
+        return token;
+      } catch (error) {
+        console.error("[NEXTAUTH_JWT_ERROR]", error);
+        return token;
       }
-      return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as any;
-        (session.user as any).approvalStatus = token.approvalStatus;
+      try {
+        if (session.user) {
+          session.user.id = token.id as string;
+          session.user.role = token.role as any;
+          (session.user as any).approvalStatus = token.approvalStatus;
+        }
+        return session;
+      } catch (error) {
+        console.error("[NEXTAUTH_SESSION_ERROR]", error);
+        return session;
       }
-      return session;
     },
     async redirect({ url, baseUrl }) {
-      // Force clean redirects for role-based onboarding
-      if (url.startsWith(baseUrl)) return url;
-      if (url.startsWith("/")) return new URL(url, baseUrl).toString();
-      return baseUrl;
+      try {
+        if (url.startsWith("/")) return `${baseUrl}${url}`;
+        else if (new URL(url).origin === baseUrl) return url;
+        return baseUrl;
+      } catch (error) {
+        console.error("[NEXTAUTH_REDIRECT_ERROR]", error);
+        return baseUrl;
+      }
     },
   },
   session: {
