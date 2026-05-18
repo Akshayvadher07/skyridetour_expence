@@ -29,13 +29,10 @@ const signupSchema = z.object({
   phone: z.string().min(10, "Valid mobile number required"),
   companyName: z.string().optional(),
   location: z.string().optional(),
-  warehouseCount: z.coerce.number().optional(),
+  warehouseCount: z.string().optional(),
   city: z.string().optional(),
   businessType: z.string().optional(),
-  gstNumber: z.string().optional().transform((val) => {
-    if (!val || val.trim() === '') return "NA";
-    return val;
-  }),
+  gstNumber: z.string().optional(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"]
@@ -122,8 +119,13 @@ function SignInContent() {
     setError(null);
     setSuccess(null);
 
+    const payload = {
+      ...data,
+      gstNumber: !data.gstNumber || data.gstNumber.trim() === '' ? "NA" : data.gstNumber
+    };
+
     try {
-      const result = await registerUser(data);
+      const result = await registerUser(payload);
       if (result.success) {
         setSuccess("REGISTRATION_SUCCESS: Your identity is pending Admin verification.");
         setMode('signin');
