@@ -5,69 +5,44 @@ if (!process.env.MONGODB_URL) {
 }
 
 const uri = process.env.MONGODB_URL;
-
 const isLocal = uri.includes('localhost') || uri.includes('127.0.0.1');
 
-// 🛡️ STABILIZED CLOUD TRANSPORT OPTIONS
+// 🛡️ ENVIRONMENT-AWARE TLS OPTIONS
+// Local MongoDB does NOT support TLS — only enforce it for Atlas cloud connections
 const options: MongoClientOptions = {
   ...(isLocal ? {} : {
     ssl: true,
     tls: true,
-    tlsAllowInvalidCertificates: process.env.NODE_ENV === 'development',
+    tlsAllowInvalidCertificates: false, // Always strict in production
   }),
-  serverSelectionTimeoutMS: 5000,
+  serverSelectionTimeoutMS: 10000,
   connectTimeoutMS: 10000,
+  socketTimeoutMS: 45000,
   maxPoolSize: 10,
 };
 
-let client: MongoClient;
+// 🛡️ GLOBAL SINGLETON CACHE — works for BOTH dev (HMR) and production (Vercel serverless)
+// This prevents connection pool exhaustion on Vercel cold starts.
+declare global {
+  var _mongoClientPromise: Promise<MongoClient> | undefined;
+}
+
 let clientPromise: Promise<MongoClient>;
 
-// 🛡️ GRACEFUL HANDSHAKE FALLBACK ERROR BOUNDARY
-async function connectWithRetry(clientInstance: MongoClient, retries = 3): Promise<MongoClient> {
-  for (let i = 0; i < retries; i++) {
-    try {
-      await clientInstance.connect();
-      // Optional Ping to verify active secure channel
-      await clientInstance.db('admin').command({ ping: 1 });
-      console.log('✅ Secure MongoDB Transport Established');
-      return clientInstance;
-    } catch (error: any) {
-      console.warn(`[MONGO_CONNECT_RETRY] Attempt ${i + 1} failed:`, error.message);
-      
-      // Specifically catch TLS/SSL alert warnings to inform the developer
-      if (error.message?.includes('ssl3_read_bytes') || error.message?.includes('tlsv1 alert')) {
-        console.error('⚠️ TLS/SSL Handshake Failure Detected. Falling back to retry queue. Ensure your .env string contains `&tlsAllowInvalidCertificates=true` if this persists.');
-      }
-      
-      if (i === retries - 1) {
-        console.error('❌ MongoDB Transport Exhausted: Unable to establish secure connection.');
-        throw error;
-      }
-      
-      // Wait 2 seconds before retrying
-      await new Promise(res => setTimeout(res, 2000));
-    }
-  }
-  return clientInstance;
+if (!global._mongoClientPromise) {
+  const client = new MongoClient(uri, options);
+  global._mongoClientPromise = client.connect()
+    .then((c) => {
+      console.log('✅ [MongoDB] Connection pool established');
+      return c;
+    })
+    .catch((err) => {
+      console.error('❌ [MongoDB] Connection failed:', err.message);
+      global._mongoClientPromise = undefined; // Allow retry on next request
+      throw err;
+    });
 }
 
-if (process.env.NODE_ENV === 'development') {
-  // In development mode, use a global variable so that the value
-  // is preserved across module reloads caused by HMR (Hot Module Replacement).
-  let globalWithMongo = global as typeof globalThis & {
-    _mongoClientPromise?: Promise<MongoClient>;
-  };
-
-  if (!globalWithMongo._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    globalWithMongo._mongoClientPromise = connectWithRetry(client);
-  }
-  clientPromise = globalWithMongo._mongoClientPromise;
-} else {
-  // In production mode, it's best to not use a global variable.
-  client = new MongoClient(uri, options);
-  clientPromise = connectWithRetry(client);
-}
+clientPromise = global._mongoClientPromise;
 
 export default clientPromise;
