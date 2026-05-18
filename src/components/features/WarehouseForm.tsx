@@ -57,6 +57,27 @@ export default function WarehouseForm({ initialData, trigger }: WarehouseFormPro
     features: initialData?.features || []
   });
 
+  // 🖼️ IMAGE UPLOAD STATE
+  const [imageFiles, setImageFiles] = useState<{ name: string; dataUrl: string }[]>(
+    initialData?.images ? JSON.parse(initialData.images).map((url: string) => ({ name: 'existing', dataUrl: url })) : []
+  );
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImageFiles(prev => [...prev, { name: file.name, dataUrl: reader.result as string }]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = ''; // Reset so same file can be re-added
+  };
+
+  const removeImage = (index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -81,6 +102,7 @@ export default function WarehouseForm({ initialData, trigger }: WarehouseFormPro
       availableCapacity: availCapNum,
       pricing: parseFloat(formData.pricing.toString()),
       area: 0, // Legacy area support reset
+      images: imageFiles.length > 0 ? JSON.stringify(imageFiles.map(f => f.dataUrl)) : "",
     };
 
     const result = isEdit 
@@ -90,11 +112,14 @@ export default function WarehouseForm({ initialData, trigger }: WarehouseFormPro
     if (result.success) {
       toast.success(isEdit ? "Facility metrics synchronized" : "Tonnage specifications transmitted to Admin");
       setIsOpen(false);
-      if (!isEdit) setFormData({
-        name: "", address: "", totalCapacity: "", availableCapacity: "", pricing: "",
-        storageType: "Dry", availableFrom: "", materialsAllowed: "",
-        wdraStatus: false, gstNumber: "", features: []
-      });
+      if (!isEdit) {
+        setFormData({
+          name: "", address: "", totalCapacity: "", availableCapacity: "", pricing: "",
+          storageType: "Dry", availableFrom: "", materialsAllowed: "",
+          wdraStatus: false, gstNumber: "", features: []
+        });
+        setImageFiles([]);
+      }
     } else {
       toast.error(result.error);
     }
@@ -238,6 +263,57 @@ export default function WarehouseForm({ initialData, trigger }: WarehouseFormPro
                   onCheckedChange={(checked) => setFormData({...formData, wdraStatus: checked})}
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Section 4: Facility Images */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 border-l-4 border-indigo-400 pl-3">
+              <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Facility Images</h3>
+            </div>
+            <div className="space-y-3">
+              <label
+                htmlFor="warehouse-images"
+                className="flex flex-col items-center justify-center gap-2 w-full h-28 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 hover:bg-indigo-50 hover:border-indigo-400 transition-all cursor-pointer group"
+              >
+                <ImageIcon className="h-6 w-6 text-slate-300 group-hover:text-indigo-400 transition-colors" />
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest group-hover:text-indigo-500">
+                  Click to upload facility photos
+                </span>
+                <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">
+                  JPG, PNG, WEBP — multiple allowed
+                </span>
+                <input
+                  id="warehouse-images"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleImageChange}
+                />
+              </label>
+
+              {imageFiles.length > 0 && (
+                <div className="grid grid-cols-4 gap-2">
+                  {imageFiles.map((img, i) => (
+                    <div key={i} className="relative group rounded-xl overflow-hidden border border-slate-200 aspect-video bg-slate-100">
+                      <img src={img.dataUrl} alt={img.name} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(i)}
+                        className="absolute top-1 right-1 h-5 w-5 bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                      {i === 0 && (
+                        <span className="absolute bottom-1 left-1 text-[7px] font-black uppercase tracking-widest bg-indigo-600 text-white px-1.5 py-0.5 rounded-md">
+                          Primary
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
