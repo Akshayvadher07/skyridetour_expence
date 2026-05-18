@@ -1,209 +1,15 @@
-// 'use client';
-
-// import { signIn } from "next-auth/react";
-// import { useForm } from "react-hook-form";
-// import { zodResolver } from "@hookform/resolvers/zod";
-// import * as z from "zod";
-// import { useState, useEffect } from "react";
-// import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-// import { LayoutDashboard, Lock, Mail, Loader2, ShieldCheck, AlertCircle, Package } from "lucide-react";
-// import { useRouter, useSearchParams } from "next/navigation";
-// import { cn } from "@/lib/utils";
-
-// const loginSchema = z.object({
-//   email: z.string().email("Industrial email identity required"),
-//   password: z.string().min(6, "Credentials must meet 6-char security minimum"),
-// });
-
-// type LoginFormValues = z.infer<typeof loginSchema>;
-
-// export default function SignInPage() {
-//   const router = useRouter();
-//   const searchParams = useSearchParams();
-//   const [error, setError] = useState<string | null>(null);
-//   const [isLoading, setIsLoading] = useState(false);
-
-//   // Check for errors in URL (from NextAuth redirects)
-//   useEffect(() => {
-//     const errorParam = searchParams.get("error");
-//     if (errorParam === "CredentialsSignin") {
-//       setError("AUTHENTICATION_FAILED: Invalid credential pair.");
-//     } else if (errorParam) {
-//       setError(`SYSTEM_ERROR: ${errorParam}`);
-//     }
-//   }, [searchParams]);
-
-//   const {
-//     register,
-//     handleSubmit,
-//     formState: { errors },
-//   } = useForm<LoginFormValues>({
-//     resolver: zodResolver(loginSchema),
-//   });
-
-//   const onSubmit = async (data: LoginFormValues) => {
-//     setIsLoading(true);
-//     setError(null);
-
-//     try {
-//       // 🛡️ CLEAN LOGIN PROTOCOL
-//       const result = await signIn("credentials", {
-//         email: data.email.toLowerCase(),
-//         password: data.password,
-//         redirect: false,
-//       });
-
-//       if (result?.ok) {
-//         // Force session parity and redirect based on role
-//         // NextAuth doesn't return the user in the result, so we fetch it or use the redirect callback logic
-//         // For simplicity and speed, we refresh and let middleware/layout handle the specific landing
-//         router.push("/dashboard"); // This will hit the proxy and redirect correctly
-//         router.refresh();
-//       } else if (result?.error) {
-//         // Parse custom error messages from authorize()
-//         if (result.error.includes("ACCOUNT_PENDING")) {
-//           setError("PENDING_VERIFICATION: Your identity is currently being audited by Administration.");
-//         } else if (result.error.includes("ACCOUNT_REJECTED")) {
-//           setError("ACCESS_DENIED: Operational privileges have been revoked.");
-//         } else {
-//           setError("AUTHENTICATION_FAILED: Invalid identity or credential pair.");
-//         }
-//         setIsLoading(false);
-//       }
-//     } catch (err) {
-//       setError("SYSTEM_TIMEOUT: Communication with Identity Registry failed.");
-//       setIsLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-4 relative overflow-hidden">
-//       {/* Background Industrial Accents */}
-//       <div className="absolute top-0 left-0 w-full h-1 bg-indigo-600" />
-//       <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-50 rounded-full opacity-50 blur-3xl" />
-      
-//       <Card className="w-full max-w-md shadow-2xl border-slate-200 rounded-3xl overflow-hidden bg-white relative z-10">
-//         <CardHeader className="space-y-4 text-center pb-8 pt-10">
-//           <div className="flex justify-center">
-//             <div className="h-14 w-14 bg-[#0f172a] rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-900/20">
-//               <Package className="h-8 w-8 text-white" />
-//             </div>
-//           </div>
-//           <div className="space-y-1">
-//             <CardTitle className="text-2xl font-black tracking-tight uppercase italic text-slate-900">
-//               Bharat<span className="text-indigo-600">Godam</span>
-//             </CardTitle>
-//             <CardDescription className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-//               Industrial Logistics Handshake
-//             </CardDescription>
-//           </div>
-//         </CardHeader>
-        
-//         <CardContent className="pb-10 px-8">
-//           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-//             {error && (
-//               <div className="rounded-2xl bg-rose-50 p-4 text-[11px] font-bold text-rose-600 border border-rose-100 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-//                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-//                 <span>{error}</span>
-//               </div>
-//             )}
-
-//             <div className="space-y-1.5">
-//               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Node</label>
-//               <div className="relative">
-//                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-//                 <input
-//                   {...register("email")}
-//                   type="email"
-//                   placeholder="corp@domain.com"
-//                   className={cn(
-//                     "w-full h-12 pl-12 pr-4 bg-slate-50 border rounded-2xl text-xs font-bold outline-none transition-all",
-//                     errors.email ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-indigo-600"
-//                   )}
-//                   disabled={isLoading}
-//                 />
-//               </div>
-//               {errors.email && (
-//                 <p className="text-[9px] text-rose-600 font-black uppercase tracking-tighter ml-1">{errors.email.message}</p>
-//               )}
-//             </div>
-
-//             <div className="space-y-1.5">
-//               <div className="flex items-center justify-between ml-1">
-//                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Access Key</label>
-//                 <button type="button" className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline">Reset</button>
-//               </div>
-//               <div className="relative">
-//                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-//                 <input
-//                   {...register("password")}
-//                   type="password"
-//                   placeholder="••••••••"
-//                   className={cn(
-//                     "w-full h-12 pl-12 pr-4 bg-slate-50 border rounded-2xl text-xs font-bold outline-none transition-all",
-//                     errors.password ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-indigo-600"
-//                   )}
-//                   disabled={isLoading}
-//                 />
-//               </div>
-//               {errors.password && (
-//                 <p className="text-[9px] text-rose-600 font-black uppercase tracking-tighter ml-1">{errors.password.message}</p>
-//               )}
-//             </div>
-
-//             <button
-//               type="submit"
-//               disabled={isLoading}
-//               className="w-full h-12 flex items-center justify-center gap-3 rounded-2xl bg-indigo-600 text-xs font-black text-white uppercase tracking-[0.2em] shadow-xl shadow-indigo-900/20 hover:bg-indigo-700 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed mt-4 group"
-//             >
-//               {isLoading ? (
-//                 <>
-//                   <Loader2 className="h-5 w-5 animate-spin" />
-//                   <span>Synchronizing...</span>
-//                 </>
-//               ) : (
-//                 <>
-//                   <span>Authenticate Session</span>
-//                   <ShieldCheck className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-//                 </>
-//               )}
-//             </button>
-//           </form>
-          
-//           <div className="mt-8 text-center pt-6 border-t border-slate-50">
-//             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-//               Unverified Participant?{" "}
-//               <a href="/auth/signup" className="text-indigo-600 font-black hover:underline">Request Onboarding</a>
-//             </p>
-//           </div>
-//         </CardContent>
-//       </Card>
-
-//       {/* Loading Overlay */}
-//       {isLoading && (
-//         <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-500">
-//           <div className="flex flex-col items-center gap-4">
-//             <div className="h-16 w-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-//             <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em]">Establishing Operational Link...</p>
-//           </div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
-
-
 'use client';
 
 import { signIn } from "next-auth/react";
-import { useForm } from "react-hook-form";
+import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useState, useEffect, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Lock, Mail, Loader2, ShieldCheck, AlertCircle, Package } from "lucide-react";
+import { Lock, Mail, Loader2, ShieldCheck, AlertCircle, Package, User, Building2, Phone, MapPin, Hash, Briefcase, FileText } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { registerUser } from "@/lib/actions/public";
 
 export const dynamic = "force-dynamic";
 
@@ -214,11 +20,37 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+const signupSchema = z.object({
+  email: z.string().email("Industrial email identity required"),
+  password: z.string().min(6, "Credentials must meet 6-char security minimum"),
+  confirmPassword: z.string(),
+  name: z.string().min(2, "Full name is required"),
+  role: z.enum(["OWNER", "CLIENT"]),
+  phone: z.string().min(10, "Valid mobile number required"),
+  companyName: z.string().optional(),
+  location: z.string().optional(),
+  warehouseCount: z.coerce.number().optional(),
+  city: z.string().optional(),
+  businessType: z.string().optional(),
+  gstNumber: z.string().optional().transform((val) => {
+    if (!val || val.trim() === '') return "NA";
+    return val;
+  }),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"]
+});
+
+type SignupFormValues = z.infer<typeof signupSchema>;
+
 function SignInContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [signupRole, setSignupRole] = useState<'CLIENT' | 'OWNER'>('CLIENT');
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -232,16 +64,32 @@ function SignInContent() {
   }, [searchParams]);
 
   const {
-    register,
-    handleSubmit,
-    formState: { errors },
+    register: registerLogin,
+    handleSubmit: handleLoginSubmit,
+    formState: { errors: loginErrors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginFormValues) => {
+  const {
+    register: registerSignup,
+    handleSubmit: handleSignupSubmit,
+    formState: { errors: signupErrors },
+    reset: resetSignup,
+    setValue: setSignupValue,
+  } = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: { role: 'CLIENT' }
+  });
+
+  useEffect(() => {
+    setSignupValue('role', signupRole);
+  }, [signupRole, setSignupValue]);
+
+  const onLogin = async (data: LoginFormValues) => {
     setIsLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       const result = await signIn("credentials", {
@@ -261,7 +109,6 @@ function SignInContent() {
         } else {
           setError("AUTHENTICATION_FAILED: Invalid identity or credential pair.");
         }
-
         setIsLoading(false);
       }
     } catch (err) {
@@ -270,13 +117,34 @@ function SignInContent() {
     }
   };
 
+  const onSignup = async (data: SignupFormValues) => {
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await registerUser(data);
+      if (result.success) {
+        setSuccess("REGISTRATION_SUCCESS: Your identity is pending Admin verification.");
+        setMode('signin');
+        resetSignup();
+      } else {
+        setError(result.error || "REGISTRATION_FAILED: Registration rejected.");
+      }
+    } catch (err) {
+      setError("SYSTEM_ERROR: Could not complete registration.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-4 relative overflow-hidden">
+    <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-4 py-12 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-1 bg-indigo-600" />
       <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-50 rounded-full opacity-50 blur-3xl" />
 
-      <Card className="w-full max-w-md shadow-2xl border-slate-200 rounded-3xl overflow-hidden bg-white relative z-10">
-        <CardHeader className="space-y-4 text-center pb-8 pt-10">
+      <Card className="w-full max-w-lg shadow-2xl border-slate-200 rounded-3xl overflow-hidden bg-white relative z-10 transition-all duration-500">
+        <CardHeader className="space-y-4 text-center pb-6 pt-10">
           <div className="flex justify-center">
             <div className="h-14 w-14 bg-[#0f172a] rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-900/20">
               <Package className="h-8 w-8 text-white" />
@@ -287,94 +155,233 @@ function SignInContent() {
             <CardTitle className="text-2xl font-black tracking-tight uppercase italic text-slate-900">
               Bharat<span className="text-indigo-600">Godam</span>
             </CardTitle>
-
             <CardDescription className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
               Industrial Logistics Handshake
             </CardDescription>
           </div>
+
+          <div className="flex bg-slate-100 p-1 rounded-xl mt-6 border border-slate-200 w-fit mx-auto">
+            <button
+              type="button"
+              onClick={() => { setMode('signin'); setError(null); setSuccess(null); }}
+              className={cn(
+                "px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                mode === 'signin' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('signup'); setError(null); setSuccess(null); }}
+              className={cn(
+                "px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                mode === 'signup' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              Create Account
+            </button>
+          </div>
         </CardHeader>
 
-        <CardContent className="pb-10 px-8">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            {error && (
-              <div className="rounded-2xl bg-rose-50 p-4 text-[11px] font-bold text-rose-600 border border-rose-100 flex items-start gap-3">
-                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                Email Node
-              </label>
-
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-
-                <input
-                  {...register("email")}
-                  type="email"
-                  placeholder="corp@domain.com"
-                  className={cn(
-                    "w-full h-12 pl-12 pr-4 bg-slate-50 border rounded-2xl text-xs font-bold outline-none transition-all",
-                    errors.email
-                      ? "border-rose-300 focus:border-rose-500"
-                      : "border-slate-200 focus:border-indigo-600"
-                  )}
-                  disabled={isLoading}
-                />
-              </div>
-
-              {errors.email && (
-                <p className="text-[9px] text-rose-600 font-black uppercase tracking-tighter ml-1">
-                  {errors.email.message}
-                </p>
-              )}
+        <CardContent className="pb-10 px-8 max-h-[65vh] overflow-y-auto custom-scrollbar">
+          {error && (
+            <div className="mb-5 rounded-2xl bg-rose-50 p-4 text-[11px] font-bold text-rose-600 border border-rose-100 flex items-start gap-3">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
             </div>
+          )}
+          
+          {success && (
+            <div className="mb-5 rounded-2xl bg-emerald-50 p-4 text-[11px] font-bold text-emerald-600 border border-emerald-100 flex items-start gap-3">
+              <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>{success}</span>
+            </div>
+          )}
 
-            <div className="space-y-1.5">
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-
-                <input
-                  {...register("password")}
-                  type="password"
-                  placeholder="••••••••"
-                  className={cn(
-                    "w-full h-12 pl-12 pr-4 bg-slate-50 border rounded-2xl text-xs font-bold outline-none transition-all",
-                    errors.password
-                      ? "border-rose-300 focus:border-rose-500"
-                      : "border-slate-200 focus:border-indigo-600"
-                  )}
-                  disabled={isLoading}
-                />
+          {mode === 'signin' ? (
+            <form onSubmit={handleLoginSubmit(onLogin)} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Node</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                  <input
+                    {...registerLogin("email")}
+                    type="email"
+                    placeholder="corp@domain.com"
+                    className={cn(
+                      "w-full h-12 pl-12 pr-4 bg-slate-50 border rounded-2xl text-xs font-bold outline-none transition-all",
+                      loginErrors.email ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-indigo-600"
+                    )}
+                    disabled={isLoading}
+                  />
+                </div>
+                {loginErrors.email && <p className="text-[9px] text-rose-600 font-black uppercase tracking-tighter ml-1">{loginErrors.email.message}</p>}
               </div>
 
-              {errors.password && (
-                <p className="text-[9px] text-rose-600 font-black uppercase tracking-tighter ml-1">
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
+              <div className="space-y-1.5">
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                  <input
+                    {...registerLogin("password")}
+                    type="password"
+                    placeholder="••••••••"
+                    className={cn(
+                      "w-full h-12 pl-12 pr-4 bg-slate-50 border rounded-2xl text-xs font-bold outline-none transition-all",
+                      loginErrors.password ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-indigo-600"
+                    )}
+                    disabled={isLoading}
+                  />
+                </div>
+                {loginErrors.password && <p className="text-[9px] text-rose-600 font-black uppercase tracking-tighter ml-1">{loginErrors.password.message}</p>}
+              </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-12 flex items-center justify-center gap-3 rounded-2xl bg-indigo-600 text-xs font-black text-white uppercase tracking-[0.2em]"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>Synchronizing...</span>
-                </>
-              ) : (
-                <>
-                  <span>Authenticate Session</span>
-                  <ShieldCheck className="h-5 w-5" />
-                </>
-              )}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-12 flex items-center justify-center gap-3 rounded-2xl bg-indigo-600 text-xs font-black text-white uppercase tracking-[0.2em] shadow-xl shadow-indigo-900/20 hover:bg-indigo-700 transition-all active:scale-[0.98]"
+              >
+                {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>Authenticate Session</span><ShieldCheck className="h-5 w-5" /></>}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleSignupSubmit(onSignup)} className="space-y-5">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block text-center">Register as a:</label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSignupRole('CLIENT')}
+                    className={cn(
+                      "flex-1 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all",
+                      signupRole === 'CLIENT' ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-sm" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+                    )}
+                  >
+                    Client
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSignupRole('OWNER')}
+                    className={cn(
+                      "flex-1 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all",
+                      signupRole === 'OWNER' ? "bg-[#0f172a] border-slate-800 text-white shadow-sm" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+                    )}
+                  >
+                    Warehouse Owner
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                    <input {...registerSignup("name")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="John Doe" disabled={isLoading}/>
+                  </div>
+                  {signupErrors.name && <p className="text-[8px] text-rose-600 font-black uppercase tracking-tighter">{signupErrors.name.message}</p>}
+                </div>
+
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                    <input {...registerSignup("email")} type="email" className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="corp@domain.com" disabled={isLoading}/>
+                  </div>
+                  {signupErrors.email && <p className="text-[8px] text-rose-600 font-black uppercase tracking-tighter">{signupErrors.email.message}</p>}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Mobile No.</label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                    <input {...registerSignup("phone")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="+91 9999999999" disabled={isLoading}/>
+                  </div>
+                  {signupErrors.phone && <p className="text-[8px] text-rose-600 font-black uppercase tracking-tighter">{signupErrors.phone.message}</p>}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Company Name</label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                    <input {...registerSignup("companyName")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder={signupRole === 'CLIENT' ? "Optional" : "Required"} disabled={isLoading}/>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">GST Number</label>
+                  <div className="relative">
+                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                    <input {...registerSignup("gstNumber")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="NA" disabled={isLoading}/>
+                  </div>
+                </div>
+
+                {signupRole === 'CLIENT' && (
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">City</label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                        <input {...registerSignup("city")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="Mumbai" disabled={isLoading}/>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5 md:col-span-2">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Business Type</label>
+                      <div className="relative">
+                        <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                        <input {...registerSignup("businessType")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="e.g. Manufacturer" disabled={isLoading}/>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {signupRole === 'OWNER' && (
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Location / Region</label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                        <input {...registerSignup("location")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="State/Region" disabled={isLoading}/>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Listings (Warehouses)</label>
+                      <div className="relative">
+                        <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                        <input {...registerSignup("warehouseCount")} type="number" className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="1" disabled={isLoading}/>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                    <input {...registerSignup("password")} type="password" className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="••••••••" disabled={isLoading}/>
+                  </div>
+                  {signupErrors.password && <p className="text-[8px] text-rose-600 font-black uppercase tracking-tighter">{signupErrors.password.message}</p>}
+                </div>
+
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Confirm Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                    <input {...registerSignup("confirmPassword")} type="password" className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="••••••••" disabled={isLoading}/>
+                  </div>
+                  {signupErrors.confirmPassword && <p className="text-[8px] text-rose-600 font-black uppercase tracking-tighter">{signupErrors.confirmPassword.message}</p>}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-12 flex items-center justify-center gap-3 rounded-2xl bg-[#0f172a] text-xs font-black text-white uppercase tracking-[0.2em] shadow-xl hover:bg-slate-800 transition-all active:scale-[0.98] mt-4"
+              >
+                {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Transmit Identity Request"}
+              </button>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -383,7 +390,7 @@ function SignInContent() {
 
 export default function SignInPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-indigo-600 h-10 w-10" /></div>}>
       <SignInContent />
     </Suspense>
   );

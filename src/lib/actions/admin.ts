@@ -5,22 +5,26 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
+import clientPromise from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
 
 export async function getAllUsers() {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== 'ADMIN') return [];
 
-  return await prisma.user.findMany({
-    orderBy: { createdAt: 'desc' },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      approvalStatus: true,
-      createdAt: true
-    }
-  });
+  const client = await clientPromise;
+  const db = client.db(process.env.MONGODB_DB);
+
+  const users = await db.collection("users").find({}).sort({ createdAt: -1 }).toArray();
+  
+  return users.map(user => ({
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    approvalStatus: user.approvalStatus,
+    createdAt: user.createdAt
+  }));
 }
 
 export async function createNewUser(data: {
@@ -36,24 +40,29 @@ export async function createNewUser(data: {
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB);
 
-    const user = await prisma.user.create({
-      data: {
-        name: data.name,
-        email: data.email,
-        password: hashedPassword,
-        role: data.role,
-        approvalStatus: "APPROVED"
-      }
+    // 1. Check if user already exists
+    const existingUser = await db.collection("users").findOne({ email: data.email.toLowerCase() });
+    if (existingUser) {
+      return { success: false, error: "Email already exists" };
+    }
+
+    const result = await db.collection("users").insertOne({
+      name: data.name,
+      email: data.email.toLowerCase(),
+      password: hashedPassword,
+      role: data.role,
+      approvalStatus: "APPROVED",
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     revalidatePath('/admin/users');
-    return { success: true, user };
+    return { success: true, user: { id: result.insertedId.toString(), email: data.email } };
   } catch (error: any) {
     console.error("[CREATE_USER_ERROR]", error);
-    if (error.code === 'P2002') {
-      return { success: false, error: "Email already exists" };
-    }
     return { success: false, error: "Failed to create user" };
   }
 }
@@ -62,10 +71,19 @@ export async function getPendingRegistrations() {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== 'ADMIN') return [];
 
-  return await prisma.user.findMany({
-    where: { approvalStatus: 'PENDING' },
-    orderBy: { createdAt: 'desc' }
-  });
+  const client = await clientPromise;
+  const db = client.db(process.env.MONGODB_DB);
+
+  const pendingUsers = await db.collection("users")
+    .find({ approvalStatus: "PENDING" })
+    .sort({ createdAt: -1 })
+    .toArray();
+
+  return pendingUsers.map(user => ({
+    ...user,
+    id: user._id.toString(),
+    _id: undefined
+  }));
 }
 
 export async function updateUserApprovalStatus(userId: string, status: 'APPROVED' | 'REJECTED') {
@@ -75,10 +93,13 @@ export async function updateUserApprovalStatus(userId: string, status: 'APPROVED
       return { success: false, error: "Unauthorized" };
     }
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: { approvalStatus: status }
-    });
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB);
+
+    await db.collection("users").updateOne(
+      { _id: new ObjectId(userId) },
+      { $set: { approvalStatus: status } }
+    );
 
     revalidatePath('/admin/approvals');
     revalidatePath('/admin/users');
