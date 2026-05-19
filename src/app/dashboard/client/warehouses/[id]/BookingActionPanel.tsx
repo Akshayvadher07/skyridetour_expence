@@ -16,7 +16,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { submitClientRequest } from "@/lib/actions/client";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface Props {
   warehouseId: string;
@@ -27,11 +27,18 @@ interface Props {
 
 export default function BookingActionPanel({ warehouseId, warehouseName, pricing, availableCapacity }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const defaultCommodity = searchParams.get("commodity") || "";
+  const defaultTonnage = searchParams.get("tonnage") || "";
+  const defaultStartDate = searchParams.get("startDate") || "";
+  const defaultEndDate = searchParams.get("endDate") || "";
+
   const [formData, setFormData] = useState({
-    commodity: "",
-    weight: "",
-    startDate: "",
-    endDate: "",
+    commodity: defaultCommodity,
+    weight: defaultTonnage,
+    startDate: defaultStartDate,
+    endDate: defaultEndDate,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 

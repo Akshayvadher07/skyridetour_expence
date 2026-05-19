@@ -1,6 +1,5 @@
 'use server';
 
-import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import bcrypt from "bcryptjs";
@@ -114,11 +113,31 @@ export async function getPendingWarehouses() {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== 'ADMIN') return [];
 
-  return await prisma.warehouse.findMany({
-    where: { status: 'PENDING' },
-    include: { owner: true },
-    orderBy: { createdAt: 'desc' }
-  });
+  const client = await clientPromise;
+  const db = client.db(process.env.MONGODB_DB);
+
+  const docs = await db.collection("warehouses")
+    .find({ status: 'PENDING' })
+    .sort({ createdAt: -1 })
+    .toArray();
+
+  return await Promise.all(docs.map(async (w) => {
+    let owner = null;
+    if (w.ownerId) {
+      try {
+        owner = await db.collection("users").findOne(
+          { _id: new ObjectId(w.ownerId) },
+          { projection: { name: 1, email: 1, phone: 1 } }
+        );
+      } catch {}
+    }
+    return {
+      id: w._id.toString(),
+      ...w,
+      _id: undefined,
+      owner: owner ? { id: w.ownerId, name: owner.name, email: owner.email, phone: owner.phone } : null,
+    };
+  }));
 }
 
 export async function verifyWarehouse(warehouseId: string, action: 'APPROVED' | 'REJECTED', reason?: string) {
@@ -128,11 +147,18 @@ export async function verifyWarehouse(warehouseId: string, action: 'APPROVED' | 
       return { success: false, error: "Unauthorized" };
     }
 
-    await prisma.warehouse.update({
-      where: { id: warehouseId },
-      data: { 
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB);
+
+    const filter = ObjectId.isValid(warehouseId)
+      ? { _id: new ObjectId(warehouseId) }
+      : { id: warehouseId };
+
+    await db.collection("warehouses").updateOne(filter, {
+      $set: { 
         status: action,
-        rejectionReason: action === 'REJECTED' ? reason : null
+        rejectionReason: action === 'REJECTED' ? (reason ?? null) : null,
+        updatedAt: new Date()
       }
     });
 
@@ -151,33 +177,59 @@ export async function getMasterBookingLedger() {
     const session = await getServerSession(authOptions);
     if (session?.user?.role !== 'ADMIN') return [];
 
-    return await prisma.booking.findMany({
-      include: {
-        client: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            businessType: true,
-            city: true
-          }
-        },
-        warehouse: {
-          include: {
-            owner: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true
-              }
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB);
+
+    const bookings = await db.collection("bookings")
+      .find({})
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return await Promise.all(bookings.map(async (booking) => {
+      let clientUser = null;
+      let warehouse = null;
+
+      if (booking.clientId) {
+        try {
+          clientUser = await db.collection("users").findOne(
+            { _id: new ObjectId(booking.clientId) },
+            { projection: { name: 1, email: 1, phone: 1, businessType: 1, city: 1 } }
+          );
+        } catch {}
+      }
+
+      if (booking.warehouseId) {
+        try {
+          const wFilter = ObjectId.isValid(booking.warehouseId)
+            ? { _id: new ObjectId(booking.warehouseId) }
+            : { id: booking.warehouseId };
+          const wDoc = await db.collection("warehouses").findOne(wFilter, {
+            projection: { name: 1, address: 1, ownerId: 1 }
+          });
+          if (wDoc) {
+            let owner = null;
+            if (wDoc.ownerId) {
+              try {
+                owner = await db.collection("users").findOne(
+                  { _id: new ObjectId(wDoc.ownerId) },
+                  { projection: { name: 1, email: 1, phone: 1 } }
+                );
+              } catch {}
             }
+            warehouse = { name: wDoc.name, address: wDoc.address, owner };
           }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+        } catch {}
+      }
+
+      return {
+        id: booking._id.toString(),
+        ...booking,
+        _id: undefined,
+        client: clientUser,
+        warehouse,
+        createdAt: booking.createdAt?.toISOString?.() ?? booking.createdAt,
+      };
+    }));
   } catch (error) {
     console.error("[GET_MASTER_BOOKINGS_ERROR]", error);
     return [];
@@ -189,30 +241,32 @@ export async function adminForceCancelBooking(bookingId: string, reason: string)
     const session = await getServerSession(authOptions);
     if (session?.user?.role !== 'ADMIN') return { success: false, error: "Unauthorized" };
 
-    // 🛡️ ATOMIC TRANSACTION: Cancel booking and release capacity
-    await prisma.$transaction(async (tx) => {
-      const booking = await tx.booking.findUnique({
-        where: { id: bookingId },
-        include: { warehouse: true }
-      });
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB);
 
-      if (!booking) throw new Error("Booking not found");
+    const bFilter = ObjectId.isValid(bookingId)
+      ? { _id: new ObjectId(bookingId) }
+      : { id: bookingId };
 
-      await tx.booking.update({
-        where: { id: bookingId },
-        data: { status: 'REJECTED' }
-      });
+    const booking = await db.collection("bookings").findOne(bFilter);
+    if (!booking) throw new Error("Booking not found");
 
-      // Restore capacity to the warehouse
-      await tx.warehouse.update({
-        where: { id: booking.warehouseId },
-        data: {
-          availableCapacity: {
-            increment: booking.weight
-          }
-        }
-      });
+    // Cancel booking
+    await db.collection("bookings").updateOne(bFilter, {
+      $set: { status: 'REJECTED', updatedAt: new Date() }
     });
+
+    // Restore capacity to the warehouse
+    if (booking.warehouseId) {
+      const wFilter = ObjectId.isValid(booking.warehouseId)
+        ? { _id: new ObjectId(booking.warehouseId) }
+        : { id: booking.warehouseId };
+
+      await db.collection("warehouses").updateOne(wFilter, {
+        $inc: { availableCapacity: booking.weight || 0 },
+        $set: { updatedAt: new Date() }
+      });
+    }
 
     revalidatePath('/admin/bookings');
     return { success: true };

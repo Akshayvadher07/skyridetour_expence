@@ -42,11 +42,28 @@ async function getWarehouse(id: string) {
   }
 }
 
-export default async function WarehouseDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function WarehouseDetailPage({ 
+  params,
+  searchParams 
+}: { 
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const { id } = await params;
+  const sParams = await searchParams;
   const warehouse = await getWarehouse(id);
 
   if (!warehouse) return notFound();
+
+  // Parse parameters to keep scan filter intact on return
+  const backQuery = new URLSearchParams();
+  if (sParams.commodity) backQuery.set("commodity", sParams.commodity as string);
+  if (sParams.tonnage) backQuery.set("tonnage", sParams.tonnage as string);
+  if (sParams.startDate) backQuery.set("startDate", sParams.startDate as string);
+  if (sParams.endDate) backQuery.set("endDate", sParams.endDate as string);
+  if (sParams.location) backQuery.set("location", sParams.location as string);
+  
+  const backUrl = `/dashboard/client/book?${backQuery.toString()}`;
 
   // Parse images from stored JSON string
   let images: string[] = [];
@@ -69,7 +86,7 @@ export default async function WarehouseDetailPage({ params }: { params: Promise<
       {/* Breadcrumb Header */}
       <div className="flex items-center justify-between border-b border-slate-200 pb-4">
         <div className="space-y-0.5">
-          <Link href="/dashboard/client/book" className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-orange-600 transition-colors mb-1">
+          <Link href={backUrl} className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-orange-600 transition-colors mb-1">
             <ArrowLeft className="h-3 w-3" /> Back to Network Scan
           </Link>
           <h1 className="text-xl font-black text-slate-900 tracking-tight italic">

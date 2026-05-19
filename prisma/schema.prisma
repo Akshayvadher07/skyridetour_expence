@@ -33,6 +33,7 @@ model User {
   warehouses    Warehouse[] // For OWNERS
   bookings      Booking[]   // For CLIENTS
   transactions  Transaction[]
+  notifications Notification[]
 }
 
 model Warehouse {
@@ -75,6 +76,7 @@ model Booking {
   endDate             DateTime
   status              String        @default("PENDING") 
   bookingType         String        @default("PLATFORM") 
+  completionAcknowledged Boolean      @default(false)
   transactions        Transaction[]
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
@@ -106,4 +108,14 @@ model Transaction {
   type          String    // e.g., PAYMENT, REFUND
   status        String    // e.g., SUCCESS, FAILED
   createdAt     DateTime  @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
 }

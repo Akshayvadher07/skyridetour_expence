@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { signOut } from "next-auth/react";
 import { useState } from "react";
+import { Logo } from "@/components/ui/logo";
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard/warehouse", icon: LayoutDashboard },
@@ -37,26 +38,18 @@ export default function WarehouseSidebar() {
       {/* Mobile Toggle */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-[#0f172a] text-white rounded-lg"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-sidebar text-sidebar-foreground shadow-lg rounded-lg"
       >
         {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
       </button>
 
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-40 w-60 bg-[#0f172a] text-slate-300 flex flex-col transition-transform lg:translate-x-0",
+        "fixed inset-y-0 left-0 z-40 w-60 bg-gradient-to-b from-sidebar to-[#0b3a77] text-sidebar-foreground border-r border-sidebar/50 shadow-xl flex flex-col transition-transform lg:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         {/* Branding */}
-        <div className="p-4 border-b border-slate-800/50">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 bg-orange-500 rounded flex items-center justify-center">
-              <span className="text-white font-black text-lg">B</span>
-            </div>
-            <div>
-              <h1 className="text-xs font-black text-white tracking-tighter leading-none uppercase">BNS Master</h1>
-              <p className="text-[9px] font-bold text-slate-500 uppercase mt-0.5 tracking-widest">Enterprise ERP</p>
-            </div>
-          </div>
+        <div className="w-full h-24 flex items-center justify-start px-6 border-b border-slate-800">
+          <Logo variant="dark" className="h-12 w-auto" />
         </div>
 
         {/* Navigation */}
@@ -70,8 +63,8 @@ export default function WarehouseSidebar() {
                 className={cn(
                   "flex items-center gap-2.5 px-4 py-2 text-[12px] font-bold transition-all group",
                   isActive 
-                    ? "bg-[#f97316] text-white" 
-                    : "hover:bg-slate-800/50 hover:text-white"
+                    ? "bg-accent shadow-md shadow-accent/20 text-white" 
+                    : "hover:bg-white/10 hover:text-white"
                 )}
               >
                 <item.icon className={cn("h-[18px] w-[18px] shrink-0", isActive ? "text-white" : "text-slate-500 group-hover:text-white")} strokeWidth={1.5} />

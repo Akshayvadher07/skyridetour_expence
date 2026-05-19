@@ -175,25 +175,91 @@ export default function WarehouseForm({ initialData, trigger }: WarehouseFormPro
                 </div>
               </div>
 
+              {/* 🏗️ FIELD X — Total Structural Capacity */}
               <div className="space-y-1.5">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Capacity (MT)</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-1">
+                    <Maximize className="h-3 w-3" /> Total Capacity (MT)
+                  </label>
+                  <span className="text-[8px] font-black bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md uppercase tracking-widest">X — Structural Max</span>
+                </div>
                 <div className="relative">
-                  <Maximize className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
-                  <input name="totalCapacity" type="number" step="0.01" required value={formData.totalCapacity} onChange={handleChange} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600 transition-all" placeholder="e.g. 5000" />
+                  <Maximize className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-indigo-300" />
+                  <input
+                    name="totalCapacity"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    value={formData.totalCapacity}
+                    onChange={handleChange}
+                    className="w-full h-10 pl-10 pr-4 bg-indigo-50/30 border border-indigo-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/5 transition-all"
+                    placeholder="e.g. 5000"
+                  />
                 </div>
               </div>
               
+              {/* 📦 FIELD Y — Initial Available/Vacant Capacity */}
               <div className="space-y-1.5">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Available Capacity (MT)</label>
-                <div className="relative">
-                  <Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
-                  <input name="availableCapacity" type="number" step="0.01" required value={formData.availableCapacity} onChange={handleChange} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600 transition-all" placeholder="e.g. 1200" />
+                <div className="flex items-center justify-between">
+                  <label className="text-[9px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-1">
+                    <Weight className="h-3 w-3" /> Available Capacity (MT)
+                  </label>
+                  <span className="text-[8px] font-black bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-md uppercase tracking-widest">Y — Vacant Space</span>
                 </div>
+                <div className="relative">
+                  <Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-emerald-300" />
+                  <input
+                    name="availableCapacity"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    value={formData.availableCapacity}
+                    onChange={handleChange}
+                    className={cn(
+                      "w-full h-10 pl-10 pr-4 border rounded-xl text-xs font-bold outline-none transition-all",
+                      parseFloat(formData.availableCapacity.toString()) > parseFloat(formData.totalCapacity.toString())
+                        ? "bg-red-50 border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
+                        : "bg-emerald-50/30 border-emerald-200 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/5"
+                    )}
+                    placeholder="e.g. 1200"
+                  />
+                </div>
+                {parseFloat(formData.availableCapacity.toString()) > parseFloat(formData.totalCapacity.toString()) && (
+                  <div className="flex items-center gap-1.5 text-[9px] font-black text-red-600 uppercase tracking-widest">
+                    <AlertCircle className="h-3 w-3" /> Available space cannot exceed total capacity
+                  </div>
+                )}
               </div>
 
-              <div className="md:col-span-2 flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                <Info className="h-3 w-3 text-slate-400" />
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">All measurements are in Metric Tons (MT). Available capacity represents vacant space.</p>
+              {/* Live Utilization Preview */}
+              {parseFloat(formData.totalCapacity.toString()) > 0 && parseFloat(formData.availableCapacity.toString()) >= 0 && (
+                <div className="md:col-span-2 p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
+                  <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest">
+                    <span className="text-slate-500">Live Capacity Preview</span>
+                    <span className="text-indigo-600">
+                      {Math.min(100, Math.round((parseFloat(formData.availableCapacity.toString()) / parseFloat(formData.totalCapacity.toString())) * 100))}% Vacant
+                    </span>
+                  </div>
+                  <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${Math.min(100, Math.max(0, (parseFloat(formData.availableCapacity.toString()) / parseFloat(formData.totalCapacity.toString())) * 100))}%`
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[8px] font-bold text-slate-400 uppercase">
+                    <span>Used: {Math.max(0, parseFloat(formData.totalCapacity.toString()) - parseFloat(formData.availableCapacity.toString() || '0')).toLocaleString()} MT</span>
+                    <span>Free: {parseFloat(formData.availableCapacity.toString() || '0').toLocaleString()} MT</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="md:col-span-2 flex items-center gap-2 bg-amber-50 p-2 rounded-lg border border-amber-100">
+                <Info className="h-3 w-3 text-amber-500 shrink-0" />
+                <p className="text-[9px] font-bold text-amber-600 uppercase tracking-widest">X = Structural ceiling of the node. Y = Current unbooked vacant space (Y ≤ X).</p>
               </div>
             </div>
           </div>

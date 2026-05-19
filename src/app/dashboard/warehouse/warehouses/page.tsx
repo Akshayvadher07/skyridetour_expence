@@ -81,83 +81,90 @@ export default function WarehouseInventory() {
                     No Registered Operational Nodes Found
                   </td>
                 </tr>
-              ) : warehouses.map((w) => (
-                <tr key={w.id} className="hover:bg-slate-50/50 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center transition-colors group-hover:bg-indigo-600">
-                        <Building2 className="h-4.5 w-4.5 text-slate-400 group-hover:text-white" />
+              ) : warehouses.map((warehouse) => {
+                const vacantPercentage = warehouse.totalCapacity > 0
+                  ? (warehouse.availableCapacity / warehouse.totalCapacity) * 100
+                  : 0;
+                return (
+                  <tr key={warehouse.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center transition-colors group-hover:bg-indigo-600">
+                          <Building2 className="h-4.5 w-4.5 text-slate-400 group-hover:text-white" />
+                        </div>
+                        <div className="space-y-0.5">
+                          <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight leading-none">{warehouse.name}</p>
+                          <p className="text-[9px] text-slate-400 font-bold uppercase truncate max-w-[150px] tracking-tighter flex items-center gap-1">
+                            <MapPin className="h-2.5 w-2.5" /> {warehouse.address}
+                          </p>
+                        </div>
                       </div>
-                      <div className="space-y-0.5">
-                        <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight leading-none">{w.name}</p>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase truncate max-w-[150px] tracking-tighter flex items-center gap-1">
-                          <MapPin className="h-2.5 w-2.5" /> {w.address}
-                        </p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-[9px] font-black uppercase tracking-widest px-2 py-0.5">
+                        {warehouse.storageType || 'DRY STORAGE'}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 bg-indigo-50 rounded-lg flex items-center justify-center border border-indigo-100">
+                          <Weight className="h-3.5 w-3.5 text-indigo-600" />
+                        </div>
+                        <div className="space-y-0.5">
+                          <p className="text-[11px] font-black text-slate-900 tracking-tighter">
+                            {warehouse.availableCapacity} / {warehouse.totalCapacity}
+                          </p>
+                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Metric Tons (MT)</p>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-[9px] font-black uppercase tracking-widest px-2 py-0.5">
-                      {w.storageType || 'DRY STORAGE'}
-                    </Badge>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="h-7 w-7 bg-indigo-50 rounded-lg flex items-center justify-center border border-indigo-100">
-                        <Weight className="h-3.5 w-3.5 text-indigo-600" />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="w-32 space-y-1.5">
+                        <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-widest">
+                          <span className="text-indigo-600">{Math.round(vacantPercentage)}% VACANT</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                          <div 
+                            className="h-full bg-indigo-600 transition-all duration-500" 
+                            style={{ width: `${vacantPercentage}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="space-y-0.5">
-                        <p className="text-[11px] font-black text-slate-900 tracking-tighter">{w.availableCapacity} / {w.totalCapacity}</p>
-                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Metric Tons (MT)</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-black text-slate-900 tracking-tighter">₹{warehouse.pricing}</span>
+                        <span className="text-[8px] font-black text-slate-400 uppercase">/ MT</span>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="w-32 space-y-1.5">
-                      <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-widest">
-                        <span className="text-indigo-600">{Math.round((w.availableCapacity / w.totalCapacity) * 100)}% VACANT</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className={cn(
+                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest",
+                        warehouse.status === 'APPROVED' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : 
+                        warehouse.status === 'REJECTED' ? "bg-red-50 text-red-600 border-red-100" :
+                        "bg-amber-50 text-amber-600 border-amber-100"
+                      )}>
+                        {warehouse.status === 'APPROVED' ? <ShieldCheck className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                        {warehouse.status === 'APPROVED' ? 'LIVE' : warehouse.status === 'REJECTED' ? 'REJECTED' : 'PENDING'}
                       </div>
-                      <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                        <div 
-                          className="h-full bg-indigo-600 transition-all duration-500" 
-                          style={{ width: `${(w.availableCapacity / w.totalCapacity) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs font-black text-slate-900 tracking-tighter">₹{w.pricing}</span>
-                      <span className="text-[8px] font-black text-slate-400 uppercase">/ MT</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className={cn(
-                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest",
-                      w.status === 'APPROVED' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : 
-                      w.status === 'REJECTED' ? "bg-red-50 text-red-600 border-red-100" :
-                      "bg-amber-50 text-amber-600 border-amber-100"
-                    )}>
-                      {w.status === 'APPROVED' ? <ShieldCheck className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
-                      {w.status === 'APPROVED' ? 'LIVE' : w.status === 'REJECTED' ? 'REJECTED' : 'PENDING'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <WarehouseForm 
-                      initialData={w} 
-                      trigger={
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                      } 
-                    />
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <WarehouseForm 
+                        initialData={warehouse} 
+                        trigger={
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        } 
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

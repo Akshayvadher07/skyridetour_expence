@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/ui/logo";
 
 const adminNavItems = [
   { label: "Users", href: "/admin/users", icon: Users },
@@ -35,14 +36,9 @@ export default function AdminLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const NavContent = () => (
-    <div className="flex flex-col h-full bg-slate-950 text-white w-64 border-r border-slate-800">
-      <div className="p-8">
-        <div className="flex items-center gap-3 font-bold text-xl">
-          <div className="h-8 w-8 bg-rose-600 rounded-lg flex items-center justify-center">
-            <ShieldCheck className="h-5 w-5 text-white" />
-          </div>
-          <span>Admin Panel</span>
-        </div>
+    <div className="flex flex-col h-full bg-gradient-to-b from-sidebar to-[#0b3a77] text-sidebar-foreground w-64 border-r border-sidebar/50 shadow-xl">
+      <div className="w-full h-24 flex items-center justify-start px-6 border-b border-sidebar/50">
+        <Logo variant="dark" className="h-12 w-auto" />
       </div>
 
       <nav className="flex-1 px-4 space-y-2 mt-4">
@@ -55,8 +51,8 @@ export default function AdminLayout({
               className={cn(
                 "flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-2xl transition-all duration-200",
                 isActive 
-                  ? "bg-rose-600 text-white shadow-lg shadow-rose-900/20" 
-                  : "text-slate-400 hover:text-white hover:bg-slate-900"
+                  ? "bg-accent text-white shadow-lg shadow-accent/20" 
+                  : "text-slate-400 hover:text-white hover:bg-white/10"
               )}
             >
               <item.icon className={cn("h-4 w-4", isActive ? "text-white" : "text-slate-500")} />

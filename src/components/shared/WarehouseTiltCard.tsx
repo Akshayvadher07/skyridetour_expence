@@ -61,7 +61,7 @@ export function WarehouseTiltCard({ warehouse, index }: WarehouseTiltCardProps) 
         
         {/* Asymmetrical Badge */}
         <div className="absolute top-0 right-0 p-6 flex flex-col items-end gap-2">
-          <Badge className="bg-brand-orange text-white border-none font-sans font-bold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full shadow-lg shadow-brand-orange/20">
+          <Badge className="bg-blue-50 text-blue-700 border border-blue-200/50 font-sans font-bold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full shadow-sm hover:bg-blue-100">
             {warehouse.status || 'Verified'}
           </Badge>
           <span className="text-[10px] font-black text-slate-300 tracking-tighter">REF: {warehouse.id.slice(-6).toUpperCase()}</span>
@@ -69,13 +69,13 @@ export function WarehouseTiltCard({ warehouse, index }: WarehouseTiltCardProps) 
 
         <div className="flex-1 space-y-8 relative z-10">
           <div className="space-y-4">
-            <div className="h-14 w-14 rounded-2xl bg-brand-cream border border-brand-orange/10 flex items-center justify-center group-hover:bg-brand-orange group-hover:text-white transition-all duration-500 shadow-inner">
+            <div className="h-14 w-14 rounded-2xl bg-brand-offwhite border border-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-500 shadow-inner">
               <Box strokeWidth={1.5} className="h-7 w-7" />
             </div>
             <div>
-              <h3 className="text-2xl font-serif font-black text-brand-charcoal group-hover:text-brand-orange transition-colors tracking-tight leading-none mb-2">{warehouse.name}</h3>
+              <h3 className="text-2xl font-serif font-black text-secondary group-hover:text-primary transition-colors tracking-tight leading-none mb-2">{warehouse.name}</h3>
               <div className="flex items-center gap-2 text-sm text-slate-400 font-medium italic">
-                <MapPin strokeWidth={1.5} className="h-4 w-4 text-brand-orange" />
+                <MapPin strokeWidth={1.5} className="h-4 w-4 text-primary" />
                 {warehouse.address}
               </div>
             </div>
@@ -85,21 +85,21 @@ export function WarehouseTiltCard({ warehouse, index }: WarehouseTiltCardProps) 
             <div>
               <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-2">Availability</p>
               <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-black text-brand-charcoal tracking-tighter">{warehouse.availableCapacity}</span>
+                <span className="text-2xl font-black text-secondary tracking-tighter">{warehouse.availableCapacity}</span>
                 <span className="text-xs font-bold text-slate-400 tracking-tight">MT</span>
               </div>
               <div className="h-1 w-full bg-slate-100 rounded-full mt-3 overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${(warehouse.availableCapacity / warehouse.totalCapacity) * 100}%` }}
-                  className="h-full bg-brand-orange rounded-full"
+                  className="h-full bg-primary rounded-full"
                 />
               </div>
             </div>
             <div>
               <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-2">Premium Rate</p>
               <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-black text-brand-charcoal tracking-tighter">₹{warehouse.pricing}</span>
+                <span className="text-2xl font-black text-secondary tracking-tighter">₹{warehouse.pricing}</span>
                 <span className="text-xs font-bold text-slate-400 tracking-tight">/ MT</span>
               </div>
             </div>
@@ -113,14 +113,14 @@ export function WarehouseTiltCard({ warehouse, index }: WarehouseTiltCardProps) 
           </div>
           <motion.div 
             whileHover={{ x: 5 }}
-            className="flex items-center gap-2 text-brand-orange font-bold text-sm"
+            className="flex items-center gap-2 text-primary font-bold text-sm"
           >
             Manage Facility <ArrowRight strokeWidth={1.5} className="h-4 w-4" />
           </motion.div>
         </div>
 
         {/* Decorative Corner Accent */}
-        <div className="absolute -bottom-10 -right-10 h-32 w-32 bg-brand-orange/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+        <div className="absolute -bottom-10 -right-10 h-32 w-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
       </div>
     </motion.div>
   );

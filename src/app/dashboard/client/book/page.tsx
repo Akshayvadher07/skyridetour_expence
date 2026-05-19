@@ -19,31 +19,32 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { searchWarehouses } from "@/lib/actions/client";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useEffect } from "react";
 
 export default function BookWarehousePage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [formData, setFormData] = useState({
-    location: "",
-    commodity: "",
-    weight: "",
-    startDate: "",
-    endDate: ""
+    location: searchParams.get("location") || "",
+    commodity: searchParams.get("commodity") || "",
+    weight: searchParams.get("tonnage") || "",
+    startDate: searchParams.get("startDate") || "",
+    endDate: searchParams.get("endDate") || ""
   });
   
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [hasScanned, setHasScanned] = useState(false);
-  const router = useRouter();
 
-  const handleScan = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const weightNum = Number(formData.weight);
+  const executeSearch = async (loc: string, wt: string) => {
+    const weightNum = Number(wt);
     setIsScanning(true);
     setHasScanned(false);
-    await new Promise(resolve => setTimeout(resolve, 1500));
     try {
-      const results = await searchWarehouses(formData.location, weightNum);
+      const results = await searchWarehouses(loc, weightNum);
       setWarehouses(results);
     } catch (error) {
       toast.error("Network synchronization failed.");
@@ -51,6 +52,38 @@ export default function BookWarehousePage() {
       setIsScanning(false);
       setHasScanned(true);
     }
+  };
+
+  useEffect(() => {
+    const loc = searchParams.get("location");
+    const wt = searchParams.get("tonnage");
+    if (loc) {
+      executeSearch(loc, wt || "0");
+    }
+  }, [searchParams]);
+
+  const handleScan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams({
+      location: formData.location,
+      commodity: formData.commodity,
+      tonnage: formData.weight,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+    });
+    router.replace(`/dashboard/client/book?${params.toString()}`);
+    await executeSearch(formData.location, formData.weight);
+  };
+
+  const handleViewDetails = (warehouseId: string) => {
+    const params = new URLSearchParams({
+      commodity: formData.commodity,
+      tonnage: formData.weight,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      location: formData.location,
+    });
+    router.push(`/dashboard/client/warehouses/${warehouseId}?${params.toString()}`);
   };
 
   return (
@@ -189,7 +222,7 @@ export default function BookWarehousePage() {
                   transition={{ delay: i * 0.05 }}
                 >
                   <Card 
-                    onClick={() => router.push(`/dashboard/client/warehouses/${w.id}`)}
+                    onClick={() => handleViewDetails(w.id)}
                     className="group cursor-pointer border border-slate-200 hover:border-orange-500 hover:shadow-2xl transition-all rounded-2xl overflow-hidden bg-white relative"
                   >
                     <div className="p-5 space-y-4">

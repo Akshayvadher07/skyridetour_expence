@@ -10,6 +10,7 @@ import { Lock, Mail, Loader2, ShieldCheck, AlertCircle, Package, User, Building2
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { registerUser } from "@/lib/actions/public";
+import { Logo } from "@/components/ui/logo";
 
 export const dynamic = "force-dynamic";
 
@@ -147,17 +148,12 @@ function SignInContent() {
 
       <Card className="w-full max-w-lg shadow-2xl border-slate-200 rounded-3xl overflow-hidden bg-white relative z-10 transition-all duration-500">
         <CardHeader className="space-y-4 text-center pb-6 pt-10">
-          <div className="flex justify-center">
-            <div className="h-14 w-14 bg-[#0f172a] rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-900/20">
-              <Package className="h-8 w-8 text-white" />
-            </div>
+          <div className="flex justify-center pb-2">
+            <Logo variant="light" className="h-20 md:h-24 w-auto mb-8" />
           </div>
 
           <div className="space-y-1">
-            <CardTitle className="text-2xl font-black tracking-tight uppercase italic text-slate-900">
-              Bharat<span className="text-indigo-600">Godam</span>
-            </CardTitle>
-            <CardDescription className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+            <CardDescription className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
               Industrial Logistics Handshake
             </CardDescription>
           </div>
@@ -213,7 +209,7 @@ function SignInContent() {
                     placeholder="corp@domain.com"
                     className={cn(
                       "w-full h-12 pl-12 pr-4 bg-slate-50 border rounded-2xl text-xs font-bold outline-none transition-all",
-                      loginErrors.email ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-indigo-600"
+                      loginErrors.email ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary"
                     )}
                     disabled={isLoading}
                   />
@@ -230,7 +226,7 @@ function SignInContent() {
                     placeholder="••••••••"
                     className={cn(
                       "w-full h-12 pl-12 pr-4 bg-slate-50 border rounded-2xl text-xs font-bold outline-none transition-all",
-                      loginErrors.password ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-indigo-600"
+                      loginErrors.password ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary"
                     )}
                     disabled={isLoading}
                   />
@@ -241,7 +237,7 @@ function SignInContent() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-12 flex items-center justify-center gap-3 rounded-2xl bg-indigo-600 text-xs font-black text-white uppercase tracking-[0.2em] shadow-xl shadow-indigo-900/20 hover:bg-indigo-700 transition-all active:scale-[0.98]"
+                className="w-full h-12 flex items-center justify-center gap-3 rounded-2xl bg-primary text-xs font-black text-primary-foreground uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all active:scale-[0.98]"
               >
                 {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>Authenticate Session</span><ShieldCheck className="h-5 w-5" /></>}
               </button>
@@ -279,7 +275,7 @@ function SignInContent() {
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                    <input {...registerSignup("name")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="John Doe" disabled={isLoading}/>
+                    <input {...registerSignup("name")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="John Doe" disabled={isLoading}/>
                   </div>
                   {signupErrors.name && <p className="text-[8px] text-rose-600 font-black uppercase tracking-tighter">{signupErrors.name.message}</p>}
                 </div>
@@ -288,7 +284,7 @@ function SignInContent() {
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Email</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                    <input {...registerSignup("email")} type="email" className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="corp@domain.com" disabled={isLoading}/>
+                    <input {...registerSignup("email")} type="email" className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="corp@domain.com" disabled={isLoading}/>
                   </div>
                   {signupErrors.email && <p className="text-[8px] text-rose-600 font-black uppercase tracking-tighter">{signupErrors.email.message}</p>}
                 </div>
@@ -297,7 +293,7 @@ function SignInContent() {
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Mobile No.</label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                    <input {...registerSignup("phone")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="+91 9999999999" disabled={isLoading}/>
+                    <input {...registerSignup("phone")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="+91 9999999999" disabled={isLoading}/>
                   </div>
                   {signupErrors.phone && <p className="text-[8px] text-rose-600 font-black uppercase tracking-tighter">{signupErrors.phone.message}</p>}
                 </div>
@@ -306,7 +302,7 @@ function SignInContent() {
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Company Name</label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                    <input {...registerSignup("companyName")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder={signupRole === 'CLIENT' ? "Optional" : "Required"} disabled={isLoading}/>
+                    <input {...registerSignup("companyName")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder={signupRole === 'CLIENT' ? "Optional" : "Required"} disabled={isLoading}/>
                   </div>
                 </div>
 
@@ -314,7 +310,7 @@ function SignInContent() {
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">GST Number</label>
                   <div className="relative">
                     <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                    <input {...registerSignup("gstNumber")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="NA" disabled={isLoading}/>
+                    <input {...registerSignup("gstNumber")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="NA" disabled={isLoading}/>
                   </div>
                 </div>
 
@@ -324,14 +320,14 @@ function SignInContent() {
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">City</label>
                       <div className="relative">
                         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                        <input {...registerSignup("city")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="Mumbai" disabled={isLoading}/>
+                        <input {...registerSignup("city")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="Mumbai" disabled={isLoading}/>
                       </div>
                     </div>
                     <div className="space-y-1.5 md:col-span-2">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Business Type</label>
                       <div className="relative">
                         <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                        <input {...registerSignup("businessType")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="e.g. Manufacturer" disabled={isLoading}/>
+                        <input {...registerSignup("businessType")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="e.g. Manufacturer" disabled={isLoading}/>
                       </div>
                     </div>
                   </>
@@ -343,14 +339,14 @@ function SignInContent() {
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Location / Region</label>
                       <div className="relative">
                         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                        <input {...registerSignup("location")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="State/Region" disabled={isLoading}/>
+                        <input {...registerSignup("location")} className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="State/Region" disabled={isLoading}/>
                       </div>
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Listings (Warehouses)</label>
                       <div className="relative">
                         <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                        <input {...registerSignup("warehouseCount")} type="number" className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="1" disabled={isLoading}/>
+                        <input {...registerSignup("warehouseCount")} type="number" className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="1" disabled={isLoading}/>
                       </div>
                     </div>
                   </>
@@ -360,7 +356,7 @@ function SignInContent() {
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Password</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                    <input {...registerSignup("password")} type="password" className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="••••••••" disabled={isLoading}/>
+                    <input {...registerSignup("password")} type="password" className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="••••••••" disabled={isLoading}/>
                   </div>
                   {signupErrors.password && <p className="text-[8px] text-rose-600 font-black uppercase tracking-tighter">{signupErrors.password.message}</p>}
                 </div>
@@ -369,7 +365,7 @@ function SignInContent() {
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Confirm Password</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                    <input {...registerSignup("confirmPassword")} type="password" className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-600" placeholder="••••••••" disabled={isLoading}/>
+                    <input {...registerSignup("confirmPassword")} type="password" className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="••••••••" disabled={isLoading}/>
                   </div>
                   {signupErrors.confirmPassword && <p className="text-[8px] text-rose-600 font-black uppercase tracking-tighter">{signupErrors.confirmPassword.message}</p>}
                 </div>
@@ -378,7 +374,7 @@ function SignInContent() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-12 flex items-center justify-center gap-3 rounded-2xl bg-[#0f172a] text-xs font-black text-white uppercase tracking-[0.2em] shadow-xl hover:bg-slate-800 transition-all active:scale-[0.98] mt-4"
+                className="w-full h-12 flex items-center justify-center gap-3 rounded-2xl bg-primary text-xs font-black text-primary-foreground uppercase tracking-[0.2em] shadow-xl hover:bg-primary/90 transition-all active:scale-[0.98] mt-4"
               >
                 {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Transmit Identity Request"}
               </button>

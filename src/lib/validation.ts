@@ -4,6 +4,10 @@ export const warehouseSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
   address: z.string().min(5, "Full address specification required"),
   totalCapacity: z.coerce.number().positive("Total capacity must be a positive metric tonnage"),
+  availableCapacity: z.coerce.number().nonnegative("Available capacity must be at least 0"),
+}).refine((data) => data.availableCapacity <= data.totalCapacity, {
+  message: "Available space cannot exceed total capacity.",
+  path: ["availableCapacity"],
 });
 
 export const bookingSchema = z.object({

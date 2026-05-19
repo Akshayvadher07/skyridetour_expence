@@ -19,8 +19,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getDashboardStats, getOwnerBookings, updateBookingStatus } from "@/lib/actions/warehouse";
+import { getDueBookings, completeBooking, acknowledgeOngoingBooking } from "@/lib/actions/bookings";
 import { TransactionFilterBar } from "@/components/features/TransactionFilterBar";
 import { DashboardSkeleton } from "@/components/shared/DashboardSkeleton";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -31,14 +33,54 @@ export default function SimplifiedLogisticsDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
 
+  const [dueBookings, setDueBookings] = useState<any[]>([]);
+  const [activeDueBooking, setActiveDueBooking] = useState<any>(null);
+  const [isDueProcessing, setIsDueProcessing] = useState(false);
+
   const fetchData = async () => {
-    const [statsData, bookingsData] = await Promise.all([
+    const [statsData, bookingsData, dueBookingsData] = await Promise.all([
       getDashboardStats(),
-      getOwnerBookings('PENDING')
+      getOwnerBookings('PENDING'),
+      getDueBookings()
     ]);
     setStats(statsData);
     setPendingRequests(bookingsData.slice(0, 5));
+    setDueBookings(dueBookingsData);
+    if (dueBookingsData.length > 0) {
+      setActiveDueBooking(dueBookingsData[0]);
+    }
     setIsLoading(false);
+  };
+
+  const handleDueBookingComplete = async () => {
+    if (!activeDueBooking) return;
+    setIsDueProcessing(true);
+    const result = await completeBooking(activeDueBooking.id);
+    if (result.success) {
+      toast.success("Booking marked as completed. Capacity reclaimed.");
+      const nextDue = dueBookings.slice(1);
+      setDueBookings(nextDue);
+      setActiveDueBooking(nextDue.length > 0 ? nextDue[0] : null);
+      fetchData(); // Refresh capacity stats
+    } else {
+      toast.error(result.error);
+    }
+    setIsDueProcessing(false);
+  };
+
+  const handleDueBookingOngoing = async () => {
+    if (!activeDueBooking) return;
+    setIsDueProcessing(true);
+    const result = await acknowledgeOngoingBooking(activeDueBooking.id);
+    if (result.success) {
+      toast.success("Booking flagged as ongoing.");
+      const nextDue = dueBookings.slice(1);
+      setDueBookings(nextDue);
+      setActiveDueBooking(nextDue.length > 0 ? nextDue[0] : null);
+    } else {
+      toast.error(result.error);
+    }
+    setIsDueProcessing(false);
   };
 
   useEffect(() => {
@@ -193,6 +235,48 @@ export default function SimplifiedLogisticsDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Due Booking Modal Prompt */}
+      <Dialog open={!!activeDueBooking} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-primary" /> Booking Completion Check
+            </DialogTitle>
+            <DialogDescription className="text-sm font-medium text-slate-500 mt-2">
+              The booking for <span className="font-bold text-slate-900">{activeDueBooking?.warehouse?.name}</span> scheduled for <span className="font-bold text-slate-900">{activeDueBooking?.weight} MT</span> has reached its end date.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+              <p className="text-xs font-bold text-slate-600">Is this booking still active or completed?</p>
+              <ul className="text-[10px] text-slate-500 space-y-1 list-disc list-inside">
+                <li><strong className="text-slate-700">Completed:</strong> Will free up {activeDueBooking?.weight} MT back into available capacity.</li>
+                <li><strong className="text-slate-700">Still Ongoing:</strong> Will keep the booking active without reclaiming space.</li>
+              </ul>
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isDueProcessing}
+              onClick={handleDueBookingOngoing}
+              className="flex-1 rounded-xl border-slate-200 text-slate-600 font-bold"
+            >
+              {isDueProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Still Ongoing"}
+            </Button>
+            <Button
+              type="button"
+              disabled={isDueProcessing}
+              onClick={handleDueBookingComplete}
+              className="flex-1 rounded-xl bg-primary text-primary-foreground font-black tracking-wide"
+            >
+              {isDueProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Mark as Completed"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -202,7 +286,7 @@ function StatWidget({ title, value, icon: Icon, color }: any) {
     <Card className="p-5 border-slate-200 shadow-sm bg-white rounded-3xl flex items-center justify-between group hover:border-indigo-600 transition-all cursor-default">
       <div className="space-y-0.5">
         <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">{title}</p>
-        <h4 className="text-2xl font-black text-slate-900 tracking-tight leading-none">{value || "0"}</h4>
+        <h4 className="text-3xl font-bold text-slate-900 tracking-tight leading-none">{value || "0"}</h4>
       </div>
       <div className={cn("h-10 w-10 rounded-2xl bg-slate-50 flex items-center justify-center border border-slate-100 group-hover:scale-110 transition-transform", color)}>
         <Icon className="h-5 w-5" strokeWidth={2.5} />
