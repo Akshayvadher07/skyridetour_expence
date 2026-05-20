@@ -21,7 +21,7 @@ async function main() {
       name: "bharatgodam",
       password: hashedAdminPassword,
       role: "ADMIN",
-      approvalStatus: "APPROVED",
+      approved: true,
       phone: "8796543210", // Mapped from 'mobileNo' to schema's actual 'phone' field
       location: "ahmedabad",
       gstNumber: "na",
