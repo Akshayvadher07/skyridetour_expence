@@ -1,61 +1,42 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 [SEED] Starting database seeding...');
+  console.log("Initializing database connection...");
 
-  // 1. Create Admin
-  const adminPassword = await bcrypt.hash('admin123', 10);
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@bharatgodam.com' },
-    update: {},
+  // Generate cryptographic hash for the default Admin password
+  const hashedAdminPassword = await bcrypt.hash("admin@098", 10);
+
+  // Use idempotent upsert to prevent unique constraint crashes
+  await prisma.user.upsert({
+    where: { email: "bharatgodam.techsolutions@gmail.com" },
+    update: {
+      // Update the password if it changed during maintenance windows
+      password: hashedAdminPassword, 
+    },
     create: {
-      email: 'admin@bharatgodam.com',
-      name: 'Super Admin',
-      password: adminPassword,
-      role: 'ADMIN',
+      email: "bharatgodam.techsolutions@gmail.com",
+      name: "bharatgodam",
+      password: hashedAdminPassword,
+      role: "ADMIN",
+      approvalStatus: "APPROVED",
+      phone: "8796543210", // Mapped from 'mobileNo' to schema's actual 'phone' field
+      location: "ahmedabad",
+      gstNumber: "na",
+      // Note: 'completionAcknowledged' omitted as it belongs to the Booking model, not User
     },
   });
-  console.log('✅ [SEED] Admin created:', admin.email);
-
-  // 2. Create Test Client
-  const clientPassword = await bcrypt.hash('client123', 10);
-  const client = await prisma.user.upsert({
-    where: { email: 'client@bharatgodam.com' },
-    update: {},
-    create: {
-      email: 'client@bharatgodam.com',
-      name: 'Test Client',
-      password: clientPassword,
-      role: 'CLIENT',
-    },
-  });
-  console.log('✅ [SEED] Client created:', client.email);
-
-  // 3. Create Test Owner (Optional, but helpful for consistency)
-  const ownerPassword = await bcrypt.hash('owner123', 10);
-  const owner = await prisma.user.upsert({
-    where: { email: 'owner@bharatgodam.com' },
-    update: {},
-    create: {
-      email: 'owner@bharatgodam.com',
-      name: 'Test Owner',
-      password: ownerPassword,
-      role: 'OWNER',
-    },
-  });
-  console.log('✅ [SEED] Owner created:', owner.email);
-
-  console.log('✨ [SEED] Seeding completed successfully!');
 }
 
 main()
-  .catch((e) => {
-    console.error('❌ [SEED] Error during seeding:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
+  .then(async () => {
+    console.log("🚀 Root Admin account 'bharatgodam' successfully seeded!");
     await prisma.$disconnect();
+  })
+  .catch(async (e) => {
+    console.error("❌ Seeding operation aborted due to an exception:", e);
+    await prisma.$disconnect();
+    process.exit(1);
   });
