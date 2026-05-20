@@ -11,7 +11,7 @@ export default async function DashboardRootPage() {
     const role = session.user.role;
     if (role === "ADMIN") {
       targetUrl = "/admin/users";
-    } else if (role === "OWNER" || role === "WAREHOUSE_OWNER") {
+    } else if (role === "OWNER") {
       targetUrl = "/dashboard/warehouse";
     } else if (role === "CLIENT") {
       targetUrl = "/dashboard/client";
