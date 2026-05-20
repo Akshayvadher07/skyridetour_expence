@@ -16,6 +16,7 @@ enum Role {
 enum BookingStatus {
   PENDING
   APPROVED
+  ONGOING
   REJECTED
   COMPLETED
 }
@@ -87,27 +88,29 @@ model Warehouse {
 }
 
 model Booking {
-  id                   String          @id @default(auto()) @map("_id") @db.ObjectId
+  id                        String          @id @default(auto()) @map("_id") @db.ObjectId
 
-  warehouseId          String          @db.ObjectId
-  warehouse            Warehouse       @relation(fields: [warehouseId], references: [id])
+  warehouseId               String          @db.ObjectId
+  warehouse                 Warehouse       @relation(fields: [warehouseId], references: [id])
 
-  clientId             String?         @db.ObjectId
-  client               User?           @relation("ClientBookings", fields: [clientId], references: [id])
+  clientId                  String?         @db.ObjectId
+  client                    User?           @relation("ClientBookings", fields: [clientId], references: [id])
 
-  manualClientName     String?
-  manualClientContact  String?
+  manualClientName          String?
+  manualClientContact       String?
 
-  weight               Float
-  commodityType        String
+  weight                    Float
+  commodityType             String
 
-  startDate            DateTime
-  endDate              DateTime
+  bookingType               BookingType     @default(ONLINE)
 
-  status               BookingStatus   @default(PENDING)
+  startDate                 DateTime
+  endDate                   DateTime
 
-  bookingType          BookingType     @default(ONLINE)
+  status                    BookingStatus   @default(PENDING)
 
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
+  completionAcknowledged    Boolean         @default(false)
+
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
 }
