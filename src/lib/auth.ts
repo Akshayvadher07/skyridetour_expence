@@ -63,7 +63,7 @@ export const authOptions: NextAuthOptions = {
             id: user.id,
             email: user.email,
             name: user.name ?? undefined,
-            role: user.role as "ADMIN" | "CLIENT",
+            role: user.role as "ADMIN" | "OWNER" | "CLIENT",
             approved: user.approved,
           };
         }
@@ -89,14 +89,11 @@ export const authOptions: NextAuthOptions = {
         if (!user) {
           throw new Error("AUTHENTICATION_FAILED: Identity not found in registry.");
         }
-        if (user.approvalStatus === "PENDING") {
+        if (!user.approved && user.role !== "ADMIN") {
           throw new Error(
             "ACCOUNT_PENDING: Verification in progress. Please wait for Admin activation."
-          );
-        }
-        if (user.approvalStatus === "REJECTED") {
-          throw new Error("ACCOUNT_REJECTED: Access denied by administration.");
-        }
+            );
+          }
 
         const isCorrectPassword = await bcrypt.compare(
           credentials.password,
@@ -111,7 +108,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           role: user.role as any,
-          approved: user.approvalStatus === "APPROVED",
+          approved: user.approved,
         };
       },
     }),
