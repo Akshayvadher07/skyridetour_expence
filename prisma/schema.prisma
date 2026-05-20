@@ -72,24 +72,33 @@ model Prompt {
   updatedAt    DateTime  @updatedAt
 }
 
+enum WarehouseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model Warehouse {
-  id                 String      @id @default(auto()) @map("_id") @db.ObjectId
+  id                 String            @id @default(auto()) @map("_id") @db.ObjectId
   name               String
   description        String?
   location           String
-  stockMovements StockMovement[]
+
   capacity           Float
   availableCapacity  Float
 
   price              Float
 
-  ownerId            String      @db.ObjectId
-  owner              User        @relation("WarehouseOwner", fields: [ownerId], references: [id])
+  status             WarehouseStatus  @default(PENDING)
+
+  ownerId            String           @db.ObjectId
+  owner              User             @relation("WarehouseOwner", fields: [ownerId], references: [id])
 
   bookings           Booking[]
+  stockMovements     StockMovement[]
 
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 }
 
 model Booking {
