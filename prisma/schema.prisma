@@ -82,12 +82,18 @@ model Warehouse {
   id                 String            @id @default(auto()) @map("_id") @db.ObjectId
   name               String
   description        String?
-  location           String
-
-  capacity           Float
+  address            String
+  area               Float             @default(0)
+  totalCapacity      Float
   availableCapacity  Float
-
-  price              Float
+  pricing            Float
+  storageType        String
+  availableFrom      DateTime?
+  materialsAllowed   String
+  wdraStatus         Boolean           @default(false)
+  gstNumber          String?
+  images             String?
+  features           String?
 
   status             WarehouseStatus  @default(PENDING)
 

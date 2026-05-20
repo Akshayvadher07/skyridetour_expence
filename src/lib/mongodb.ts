@@ -1,10 +1,10 @@
 import { MongoClient, MongoClientOptions } from 'mongodb';
 
-if (!process.env.MONGODB_URL) {
-  throw new Error('Invalid/Missing environment variable: "MONGODB_URL"');
+const uri = process.env.MONGODB_URL || process.env.DATABASE_URL;
+if (!uri) {
+  throw new Error('Invalid/Missing environment variable: "MONGODB_URL" or "DATABASE_URL"');
 }
 
-const uri = process.env.MONGODB_URL;
 const isLocal = uri.includes('localhost') || uri.includes('127.0.0.1');
 
 // 🛡️ ENVIRONMENT-AWARE TLS OPTIONS
