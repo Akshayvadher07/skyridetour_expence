@@ -146,6 +146,11 @@ model StockMovement {
   weight         Float
 
   truckNumber    String?
+  driverName     String?
+  biltyNumber    String?
+  partyName      String?
+
+  status         String         @default("COMPLETED")
 
   notes          String?
 
