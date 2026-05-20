@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
         name,
         email: cleanEmail,
         password: hashedPassword,
-        role: "USER",
+        role: "CLIENT",
         approved: false, // Requires admin approval
       },
       select: { id: true, name: true, email: true, role: true, approved: true, createdAt: true },

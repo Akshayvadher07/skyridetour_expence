@@ -55,7 +55,7 @@ export async function PATCH(
         updateData = { role: "ADMIN", approved: true };
         break;
       case "demote":
-        updateData = { role: "USER" };
+        updateData = { role: "CLIENT" };
         break;
     }
 

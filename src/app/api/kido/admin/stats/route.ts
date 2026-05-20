@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
       promptsByCategory,
     ] = await Promise.all([
       prisma.user.count(),
-      prisma.user.count({ where: { approved: false, role: "USER" } }),
+      prisma.user.count({ where: { approved: false, role: "CLIENT" } }),
       prisma.user.count({ where: { approved: true } }),
       prisma.prompt.count(),
       prisma.user.findMany({

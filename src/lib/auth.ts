@@ -9,13 +9,13 @@ declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string;
-      role: "ADMIN" | "USER" | "OWNER" | "CLIENT";
+      role: "ADMIN" | "OWNER" | "CLIENT";
       approved?: boolean;
     } & DefaultSession["user"];
   }
   interface User {
     id: string;
-    role: "ADMIN" | "USER" | "OWNER" | "CLIENT";
+    role: "ADMIN" | "OWNER" | "CLIENT";
     approved?: boolean;
   }
 }
@@ -63,7 +63,7 @@ export const authOptions: NextAuthOptions = {
             id: user.id,
             email: user.email,
             name: user.name ?? undefined,
-            role: user.role as "ADMIN" | "USER",
+            role: user.role as "ADMIN" | "CLIENT",
             approved: user.approved,
           };
         }

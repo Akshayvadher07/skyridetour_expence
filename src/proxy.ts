@@ -17,7 +17,7 @@ export default withAuth(
       if (role === "ADMIN") {
         return NextResponse.redirect(new URL("/admin/users", req.url));
       }
-      if (role === "OWNER" || role === "WAREHOUSE_OWNER") {
+      if (role === "OWNER" || role === "OWNER") {
         return NextResponse.redirect(new URL("/dashboard/warehouse", req.url));
       }
       if (role === "CLIENT") {
@@ -31,7 +31,7 @@ export default withAuth(
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    if (path.startsWith("/dashboard/warehouse") && role !== "OWNER" && role !== "WAREHOUSE_OWNER") {
+    if (path.startsWith("/dashboard/warehouse") && role !== "OWNER" && role !== "OWNER") {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 

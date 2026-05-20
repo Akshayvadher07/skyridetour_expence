@@ -60,7 +60,7 @@ export default function AdminUserManager({
     });
   }, [users, search, filter]);
 
-  const pendingCount = users.filter((u) => !u.approved && u.role === "USER").length;
+  const pendingCount = users.filter((u) => !u.approved && u.role === "CLIENT").length;
 
   const performAction = async (userId: string, action: Action) => {
     setLoadingId(userId);
@@ -85,7 +85,7 @@ export default function AdminUserManager({
             case "promote":
               return { ...u, role: "ADMIN", approved: true };
             case "demote":
-              return { ...u, role: "USER" };
+              return { ...u, role: "CLIENT" };
             default:
               return u;
           }

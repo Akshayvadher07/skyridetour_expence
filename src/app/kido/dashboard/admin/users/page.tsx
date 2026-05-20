@@ -21,7 +21,7 @@ export default async function AdminUsersPage() {
     },
   });
 
-  const pendingCount = users.filter((u) => !u.approved && u.role === "USER").length;
+  const pendingCount = users.filter((u) => !u.approved && u.role === "CLIENT").length;
 
   return (
     <div className="max-w-5xl mx-auto">
