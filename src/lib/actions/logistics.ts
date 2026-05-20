@@ -69,7 +69,7 @@ export async function getWarehouseLedger(warehouseId: string) {
   try {
     const movements = await prisma.stockMovement.findMany({
       where: { warehouseId },
-      orderBy: { timestamp: 'desc' }
+      orderBy: { createdAt: 'desc' }
     });
     return movements;
   } catch (error) {
