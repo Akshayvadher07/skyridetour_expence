@@ -94,7 +94,10 @@ function SignInContent() {
       email: data.email.toLowerCase(),
       password: data.password,
       redirect: false,
+      callbackUrl: "/dashboard",
     });
+
+    console.log("LOGIN RESULT:", result);
 
     if (result?.error) {
       setError(result.error);
@@ -102,13 +105,21 @@ function SignInContent() {
       return;
     }
 
-    // Small delay for session creation
-    setTimeout(() => {
+    if (result?.ok) {
       window.location.href = "/dashboard";
-    }, 500);
+      return;
+    }
+
+    setError("Authentication failed");
+    setIsLoading(false);
 
   } catch (err) {
-    setError("SYSTEM_TIMEOUT: Communication with Identity Registry failed.");
+    console.error(err);
+
+    setError(
+      "SYSTEM_TIMEOUT: Communication with Identity Registry failed."
+    );
+
     setIsLoading(false);
   }
 };
