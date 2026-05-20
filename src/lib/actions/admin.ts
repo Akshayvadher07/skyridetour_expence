@@ -9,22 +9,21 @@ import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 
 export async function getAllUsers() {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== 'ADMIN') return [];
-
-  const client = await clientPromise;
-  const db = client.db(process.env.MONGODB_DB);
-
-  const users = await db.collection("users").find({}).sort({ createdAt: -1 }).toArray();
-  
-  return users.map(user => ({
-    id: user._id.toString(),
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    approvalStatus: user.approvalStatus,
-    createdAt: user.createdAt
-  }));
+  try {
+    return await prisma.user.findMany({
+      where: {
+        role: {
+          not: "ADMIN",
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+  } catch (error) {
+    console.error("[GET_ALL_USERS_ERROR]", error);
+    return [];
+  }
 }
 
 export async function createNewUser(data: {
