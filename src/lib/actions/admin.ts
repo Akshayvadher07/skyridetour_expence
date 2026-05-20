@@ -67,45 +67,49 @@ export async function createNewUser(data: {
 }
 
 export async function getPendingRegistrations() {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== 'ADMIN') return [];
-
-  const client = await clientPromise;
-  const db = client.db(process.env.MONGODB_DB);
-
-  const pendingUsers = await db.collection("users")
-    .find({ approvalStatus: "PENDING" })
-    .sort({ createdAt: -1 })
-    .toArray();
-
-  return pendingUsers.map(user => ({
-    ...user,
-    id: user._id.toString(),
-    _id: undefined
-  }));
+  try {
+    return await prisma.user.findMany({
+      where: {
+        approved: false,
+        role: {
+          not: "ADMIN",
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+  } catch (error) {
+    console.error("[GET_PENDING_USERS_ERROR]", error);
+    return [];
+  }
 }
 
-export async function updateUserApprovalStatus(userId: string, status: 'APPROVED' | 'REJECTED') {
+export async function updateUserApprovalStatus(
+  userId: string,
+  status: "APPROVED" | "REJECTED"
+) {
   try {
-    const session = await getServerSession(authOptions);
-    if (session?.user?.role !== 'ADMIN') {
-      return { success: false, error: "Unauthorized" };
-    }
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        approved: status === "APPROVED",
+      },
+    });
 
-    const client = await clientPromise;
-    const db = client.db(process.env.MONGODB_DB);
+    revalidatePath("/admin/approvals");
 
-    await db.collection("users").updateOne(
-      { _id: new ObjectId(userId) },
-      { $set: { approvalStatus: status } }
-    );
-
-    revalidatePath('/admin/approvals');
-    revalidatePath('/admin/users');
     return { success: true };
-  } catch (error) {
-    console.error("[UPDATE_USER_APPROVAL_ERROR]", error);
-    return { success: false, error: "Failed to update user status" };
+
+  } catch (error: any) {
+    console.error("[UPDATE_USER_STATUS_ERROR]", error);
+
+    return {
+      success: false,
+      error: error.message,
+    };
   }
 }
 
