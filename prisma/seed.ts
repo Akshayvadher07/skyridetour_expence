@@ -22,9 +22,9 @@ async function main() {
       password: hashedAdminPassword,
       role: "ADMIN",
       approved: true,
-      phone: "8796543210", // Mapped from 'mobileNo' to schema's actual 'phone' field
-      location: "ahmedabad",
-      gstNumber: "na",
+      // phone: "8796543210", // Mapped from 'mobileNo' to schema's actual 'phone' field
+      // location: "ahmedabad",
+      // gstNumber: "na",
       // Note: 'completionAcknowledged' omitted as it belongs to the Booking model, not User
     },
   });
