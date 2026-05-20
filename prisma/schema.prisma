@@ -61,20 +61,23 @@ model Prompt {
 }
 
 model Warehouse {
-  id            String      @id @default(auto()) @map("_id") @db.ObjectId
-  name          String
-  description   String?
-  location      String
-  capacity      Int
-  price         Float
+  id                 String      @id @default(auto()) @map("_id") @db.ObjectId
+  name               String
+  description        String?
+  location           String
 
-  ownerId       String      @db.ObjectId
-  owner         User        @relation("WarehouseOwner", fields: [ownerId], references: [id])
+  capacity           Int
+  availableCapacity  Int
 
-  bookings      Booking[]
+  price              Float
 
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  ownerId            String      @db.ObjectId
+  owner              User        @relation("WarehouseOwner", fields: [ownerId], references: [id])
+
+  bookings           Booking[]
+
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 }
 
 model Booking {
@@ -82,6 +85,8 @@ model Booking {
 
   clientId        String          @db.ObjectId
   warehouseId     String          @db.ObjectId
+
+  weight          Float
 
   startDate       DateTime
   endDate         DateTime
