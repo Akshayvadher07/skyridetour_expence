@@ -68,48 +68,48 @@ export const authOptions: NextAuthOptions = {
           };
         }
 
-        // ── BharatGodam legacy auth path ──────────────────────────────────
-        if (
-          credentials.email === "bharatgodam.techsolutions@gmail.com" &&
-          credentials.password === "admin@123"
-        ) {
-          return {
-            id: "admin-root",
-            name: "bharatgodam",
-            email: credentials.email,
-            role: "ADMIN",
-            approved: true,
-          } as any;
-        }
+        // // ── BharatGodam legacy auth path ──────────────────────────────────
+        // if (
+        //   credentials.email === "bharatgodam.techsolutions@gmail.com" &&
+        //   credentials.password === "admin@123"
+        // ) {
+        //   return {
+        //     id: "admin-root",
+        //     name: "bharatgodam",
+        //     email: credentials.email,
+        //     role: "ADMIN",
+        //     approved: true,
+        //   } as any;
+        // }
 
-        const client = await clientPromise;
-        const db = client.db(process.env.MONGODB_DB);
-        const user = await db.collection("users").findOne({ email: cleanEmail });
+        // const client = await clientPromise;
+        // const db = client.db(process.env.MONGODB_DB);
+        // const user = await db.collection("users").findOne({ email: cleanEmail });
 
-        if (!user) {
-          throw new Error("AUTHENTICATION_FAILED: Identity not found in registry.");
-        }
-        if (!user.approved && user.role !== "ADMIN") {
-          throw new Error(
-            "ACCOUNT_PENDING: Verification in progress. Please wait for Admin activation."
-            );
-          }
+        // if (!user) {
+        //   throw new Error("AUTHENTICATION_FAILED: Identity not found in registry.");
+        // }
+        // if (!user.approved && user.role !== "ADMIN") {
+        //   throw new Error(
+        //     "ACCOUNT_PENDING: Verification in progress. Please wait for Admin activation."
+        //     );
+        //   }
 
-        const isCorrectPassword = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-        if (!isCorrectPassword) {
-          throw new Error("AUTHENTICATION_FAILED: Invalid credential pair.");
-        }
+        // const isCorrectPassword = await bcrypt.compare(
+        //   credentials.password,
+        //   user.password
+        // );
+        // if (!isCorrectPassword) {
+        //   throw new Error("AUTHENTICATION_FAILED: Invalid credential pair.");
+        // }
 
-        return {
-          id: user._id.toString(),
-          email: user.email,
-          name: user.name,
-          role: user.role as any,
-          approved: user.approved,
-        };
+        // return {
+        //   id: user._id.toString(),
+        //   email: user.email,
+        //   name: user.name,
+        //   role: user.role as any,
+        //   approved: user.approved,
+        // };
       },
     }),
   ],
