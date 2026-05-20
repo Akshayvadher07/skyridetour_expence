@@ -7,14 +7,9 @@ if (!uri) {
 
 const isLocal = uri.includes('localhost') || uri.includes('127.0.0.1');
 
-// 🛡️ ENVIRONMENT-AWARE TLS OPTIONS
-// Local MongoDB does NOT support TLS — only enforce it for Atlas cloud connections
+// 🛡️ ENVIRONMENT-AWARE CONNECTION OPTIONS
+// Let the URI manage TLS settings for Atlas, and keep local MongoDB simple.
 const options: MongoClientOptions = {
-  ...(isLocal ? {} : {
-    ssl: true,
-    tls: true,
-    tlsAllowInvalidCertificates: false, // Always strict in production
-  }),
   serverSelectionTimeoutMS: 10000,
   connectTimeoutMS: 10000,
   socketTimeoutMS: 45000,
