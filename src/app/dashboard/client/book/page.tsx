@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { 
   Search, 
   MapPin, 
@@ -23,7 +23,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect } from "react";
 
-export default function BookWarehousePage() {
+function BookWarehouseContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -259,5 +259,19 @@ export default function BookWarehousePage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function BookWarehousePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] animate-pulse flex items-center gap-2">
+          Initializing Scanner...
+        </div>
+      </div>
+    }>
+      <BookWarehouseContent />
+    </Suspense>
   );
 }
