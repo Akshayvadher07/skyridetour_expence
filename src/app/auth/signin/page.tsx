@@ -7,7 +7,7 @@ import * as z from "zod";
 import { useState, useEffect, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Lock, Mail, Loader2, ShieldCheck, AlertCircle, Package, User, Building2, Phone, MapPin, Hash, Briefcase, FileText } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { registerUser } from "@/lib/actions/public";
 import { Logo } from "@/components/ui/logo";
@@ -42,7 +42,7 @@ const signupSchema = z.object({
 type SignupFormValues = z.infer<typeof signupSchema>;
 
 function SignInContent() {
-  const router = useRouter();
+  
   const searchParams = useSearchParams();
 
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -85,35 +85,33 @@ function SignInContent() {
   }, [signupRole, setSignupValue]);
 
   const onLogin = async (data: LoginFormValues) => {
-    setIsLoading(true);
-    setError(null);
-    setSuccess(null);
+  setIsLoading(true);
+  setError(null);
+  setSuccess(null);
 
-    try {
-      const result = await signIn("credentials", {
-        email: data.email.toLowerCase(),
-        password: data.password,
-        redirect: false,
-      });
+  try {
+    const result = await signIn("credentials", {
+      email: data.email.toLowerCase(),
+      password: data.password,
+      redirect: false,
+    });
 
-      if (result?.ok) {
-        router.push("/dashboard");
-        router.refresh();
-      } else if (result?.error) {
-        if (result.error.includes("ACCOUNT_PENDING")) {
-          setError("PENDING_VERIFICATION: Your identity is currently being audited by Administration.");
-        } else if (result.error.includes("ACCOUNT_REJECTED")) {
-          setError("ACCESS_DENIED: Operational privileges have been revoked.");
-        } else {
-          setError("AUTHENTICATION_FAILED: Invalid identity or credential pair.");
-        }
-        setIsLoading(false);
-      }
-    } catch (err) {
-      setError("SYSTEM_TIMEOUT: Communication with Identity Registry failed.");
+    if (result?.error) {
+      setError(result.error);
       setIsLoading(false);
+      return;
     }
-  };
+
+    // Small delay for session creation
+    setTimeout(() => {
+      window.location.href = "/dashboard";
+    }, 500);
+
+  } catch (err) {
+    setError("SYSTEM_TIMEOUT: Communication with Identity Registry failed.");
+    setIsLoading(false);
+  }
+};
 
   const onSignup = async (data: SignupFormValues) => {
     setIsLoading(true);
