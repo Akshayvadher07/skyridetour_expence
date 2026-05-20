@@ -81,22 +81,26 @@ model Warehouse {
 }
 
 model Booking {
-  id              String          @id @default(auto()) @map("_id") @db.ObjectId
+  id                   String          @id @default(auto()) @map("_id") @db.ObjectId
 
-  clientId        String          @db.ObjectId
-  warehouseId     String          @db.ObjectId
+  clientId             String?         @db.ObjectId
+  warehouseId          String          @db.ObjectId
 
-  weight          Float
+  manualClientName     String?
+  manualClientContact  String?
 
-  startDate       DateTime
-  endDate         DateTime
+  weight               Float
+  commodityType        String
 
-  status          BookingStatus   @default(PENDING)
+  startDate            DateTime
+  endDate              DateTime
 
-  client          User            @relation("ClientBookings", fields: [clientId], references: [id])
+  status               BookingStatus   @default(PENDING)
 
-  warehouse       Warehouse       @relation(fields: [warehouseId], references: [id])
+  client               User?           @relation("ClientBookings", fields: [clientId], references: [id])
 
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  warehouse            Warehouse       @relation(fields: [warehouseId], references: [id])
+
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
 }
