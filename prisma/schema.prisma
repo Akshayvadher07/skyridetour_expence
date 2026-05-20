@@ -20,22 +20,27 @@ enum BookingStatus {
   COMPLETED
 }
 
+enum BookingType {
+  ONLINE
+  MANUAL
+}
+
 model User {
-  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
   name        String?
-  email       String      @unique
+  email       String        @unique
   password    String
-  role        Role        @default(CLIENT)
-  approved    Boolean     @default(false)
+  role        Role          @default(CLIENT)
+  approved    Boolean       @default(false)
 
   prompts     Prompt[]
 
-  warehouses  Warehouse[] @relation("WarehouseOwner")
+  warehouses  Warehouse[]   @relation("WarehouseOwner")
 
-  bookings    Booking[]   @relation("ClientBookings")
+  bookings    Booking[]     @relation("ClientBookings")
 
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 model Prompt {
@@ -66,8 +71,8 @@ model Warehouse {
   description        String?
   location           String
 
-  capacity           Int
-  availableCapacity  Int
+  capacity           Float
+  availableCapacity  Float
 
   price              Float
 
@@ -83,8 +88,11 @@ model Warehouse {
 model Booking {
   id                   String          @id @default(auto()) @map("_id") @db.ObjectId
 
-  clientId             String?         @db.ObjectId
   warehouseId          String          @db.ObjectId
+  warehouse            Warehouse       @relation(fields: [warehouseId], references: [id])
+
+  clientId             String?         @db.ObjectId
+  client               User?           @relation("ClientBookings", fields: [clientId], references: [id])
 
   manualClientName     String?
   manualClientContact  String?
@@ -97,9 +105,7 @@ model Booking {
 
   status               BookingStatus   @default(PENDING)
 
-  client               User?           @relation("ClientBookings", fields: [clientId], references: [id])
-
-  warehouse            Warehouse       @relation(fields: [warehouseId], references: [id])
+  bookingType          BookingType     @default(ONLINE)
 
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
