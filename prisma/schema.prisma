@@ -8,8 +8,8 @@ datasource db {
 }
 
 enum MovementType {
-  IN
-  OUT
+  INBOUND
+  OUTBOUND
 }
 
 enum Role {
@@ -142,8 +142,10 @@ model StockMovement {
 
   type           MovementType
 
-  commodityType  String
-  quantity       Float
+  commodity      String
+  weight         Float
+
+  truckNumber    String?
 
   notes          String?
 
