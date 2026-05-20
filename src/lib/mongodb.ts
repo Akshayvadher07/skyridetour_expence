@@ -1,43 +1,28 @@
-import { MongoClient, MongoClientOptions } from 'mongodb';
+import { MongoClient } from "mongodb";
 
-const uri = process.env.MONGODB_URL || process.env.DATABASE_URL;
+const uri = process.env.DATABASE_URL!;
+
 if (!uri) {
-  throw new Error('Invalid/Missing environment variable: "MONGODB_URL" or "DATABASE_URL"');
+  throw new Error("Please add DATABASE_URL to environment variables");
 }
 
-const isLocal = uri.includes('localhost') || uri.includes('127.0.0.1');
-
-// 🛡️ ENVIRONMENT-AWARE CONNECTION OPTIONS
-// Let the URI manage TLS settings for Atlas, and keep local MongoDB simple.
-const options: MongoClientOptions = {
-  serverSelectionTimeoutMS: 10000,
-  connectTimeoutMS: 10000,
-  socketTimeoutMS: 45000,
-  maxPoolSize: 10,
-};
-
-// 🛡️ GLOBAL SINGLETON CACHE — works for BOTH dev (HMR) and production (Vercel serverless)
-// This prevents connection pool exhaustion on Vercel cold starts.
 declare global {
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
+let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
-if (!global._mongoClientPromise) {
-  const client = new MongoClient(uri, options);
-  global._mongoClientPromise = client.connect()
-    .then((c) => {
-      console.log('✅ [MongoDB] Connection pool established');
-      return c;
-    })
-    .catch((err) => {
-      console.error('❌ [MongoDB] Connection failed:', err.message);
-      global._mongoClientPromise = undefined; // Allow retry on next request
-      throw err;
-    });
-}
+if (process.env.NODE_ENV === "development") {
+  if (!global._mongoClientPromise) {
+    client = new MongoClient(uri);
+    global._mongoClientPromise = client.connect();
+  }
 
-clientPromise = global._mongoClientPromise;
+  clientPromise = global._mongoClientPromise;
+} else {
+  client = new MongoClient(uri);
+  clientPromise = client.connect();
+}
 
 export default clientPromise;
