@@ -10,7 +10,7 @@ interface LogoProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export function Logo({ variant = "dark", iconOnly = false, className, ...props }: LogoProps) {
   return (
-    <div className={cn("flex items-center justify-center select-none shrink-0", className)} {...props}>
+    <div className={cn("flex items-center justify-center select-none shrink-1", className)} {...props}>
       <img 
         src="/bharatgodam-logo.jpg" 
         alt="BharatGodam Logo" 

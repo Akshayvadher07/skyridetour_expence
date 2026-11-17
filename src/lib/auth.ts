@@ -1,280 +1,207 @@
-// import { NextAuthOptions, DefaultSession } from "next-auth";
-// import CredentialsProvider from "next-auth/providers/credentials";
-// import clientPromise from "@/lib/mongodb";
-// import { prisma } from "@/lib/prisma";
-// import bcrypt from "bcryptjs";
-
-// // ─── Type Augmentation ────────────────────────────────────────────────────────
-// declare module "next-auth" {
-//   interface Session extends DefaultSession {
-//     user: {
-//       id: string;
-//       role: "ADMIN" | "OWNER" | "CLIENT";
-//       approved?: boolean;
-//     } & DefaultSession["user"];
-//   }
-//   interface User {
-//     id: string;
-//     role: "ADMIN" | "OWNER" | "CLIENT";
-//     approved?: boolean;
-//   }
-// }
-
-// export const authOptions: NextAuthOptions = {
-//   providers: [
-//     CredentialsProvider({
-//       name: "credentials",
-//       credentials: {
-//         email: { label: "Email", type: "email" },
-//         password: { label: "Password", type: "password" },
-//         // Optional flag to route to Kido AI auth
-//         app: { label: "App", type: "text" },
-//       },
-//       async authorize(credentials) {
-//         if (!credentials?.email || !credentials?.password) {
-//           throw new Error("Invalid credentials");
-//         }
-
-//         const cleanEmail = credentials.email.trim().toLowerCase();
-
-//         // ── Kido AI auth path ──────────────────────────────────────────────
-//         if (credentials.app === "kido") {
-//           const user = await prisma.user.findUnique({
-//             where: { email: cleanEmail },
-//           });
-
-//           if (!user) {
-//             throw new Error("KIDO_AUTH_FAILED: Account not found.");
-//           }
-
-//           // Admin approval gate
-//           if (!user.approved && user.role !== "ADMIN") {
-//             throw new Error(
-//               "KIDO_PENDING: Your account is awaiting admin approval."
-//             );
-//           }
-
-//           const isValid = await bcrypt.compare(credentials.password, user.password);
-//           if (!isValid) {
-//             throw new Error("KIDO_AUTH_FAILED: Invalid credentials.");
-//           }
-
-//           return {
-//             id: user.id,
-//             email: user.email,
-//             name: user.name ?? undefined,
-//             role: user.role as "ADMIN" | "OWNER" | "CLIENT",
-//             approved: user.approved,
-//           };
-//         }
-
-//         // ── BharatGodam legacy auth path ──────────────────────────────────
-//         if (
-//           credentials.email === "bharatgodam.techsolutions@gmail.com" &&
-//           credentials.password === "admin@123"
-//         ) {
-//           return {
-//             id: "admin-root",
-//             name: "bharatgodam",
-//             email: credentials.email,
-//             role: "ADMIN",
-//             approved: true,
-//           } as any;
-//         }
-
-//         const client = await clientPromise;
-//         const db = client.db(process.env.MONGODB_DB);
-//         const user = await db.collection("users").findOne({ email: cleanEmail });
-
-//         if (!user) {
-//           throw new Error("AUTHENTICATION_FAILED: Identity not found in registry.");
-//         }
-//         if (!user.approved && user.role !== "ADMIN") {
-//           throw new Error(
-//             "ACCOUNT_PENDING: Verification in progress. Please wait for Admin activation."
-//             );
-//           }
-
-//         const isCorrectPassword = await bcrypt.compare(
-//           credentials.password,
-//           user.password
-//         );
-//         if (!isCorrectPassword) {
-//           throw new Error("AUTHENTICATION_FAILED: Invalid credential pair.");
-//         }
-
-//         return {
-//           id: user._id.toString(),
-//           email: user.email,
-//           name: user.name,
-//           role: user.role as any,
-//           approved: user.approved,
-//         };
-//       },
-//     }),
-//   ],
-
-//   callbacks: {
-//     async jwt({ token, user }) {
-//       if (user) {
-//         token.id = user.id;
-//         token.role = user.role;
-//         token.approved = user.approved;
-//       }
-//       return token;
-//     },
-//     async session({ session, token }) {
-//       if (session.user) {
-//         session.user.id = token.id as string;
-//         session.user.role = token.role as any;
-//         (session.user as any).approved = token.approved;
-//       }
-//       return session;
-//     },
-//     async redirect({ url, baseUrl }) {
-//       if (url.startsWith("/")) return `${baseUrl}${url}`;
-//       if (new URL(url).origin === baseUrl) return url;
-//       return baseUrl;
-//     },
-//   },
-
-//   session: {
-//     strategy: "jwt",
-//     maxAge: 30 * 24 * 60 * 60,
-//   },
-//   pages: {
-//     signIn: "/auth/signin",
-//     error: "/auth/error",
-//   },
-//   secret: process.env.NEXTAUTH_SECRET,
-// };
-
+// =============================================================================
+// SkyRideTour — NextAuth Configuration
+// JWT strategy | Credentials provider | Role-aware token + session
+// =============================================================================
 
 import { NextAuthOptions, DefaultSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { hashPassword, verifyPassword } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
+import type { UserRole } from "@prisma/client";
 
-// ─── Type Augmentation ────────────────────────────────────────────────────────
+const DEFAULT_ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@skyridetour.com";
+const DEFAULT_ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "Admin@123";
+const DEFAULT_OWNER_EMAIL = process.env.SEED_OWNER_EMAIL ?? "owner@skyridetour.com";
+const DEFAULT_OWNER_PASSWORD = process.env.SEED_OWNER_PASSWORD ?? "SkyRide@2026";
+
+async function ensureDefaultUsers() {
+  const defaults = [
+    {
+      email: DEFAULT_ADMIN_EMAIL.toLowerCase().trim(),
+      password: DEFAULT_ADMIN_PASSWORD,
+      name: "SkyRide Admin",
+      role: "ADMIN" as const,
+    },
+    {
+      email: DEFAULT_OWNER_EMAIL.toLowerCase().trim(),
+      password: DEFAULT_OWNER_PASSWORD,
+      name: "SkyRide Owner",
+      role: "OWNER" as const,
+    },
+  ];
+
+  for (const candidate of defaults) {
+    const existing = await prisma.user.findUnique({
+      where: {
+        email: candidate.email,
+      },
+    });
+
+    if (!existing) {
+      await prisma.user.create({
+        data: {
+          name: candidate.name,
+          email: candidate.email,
+          passwordHash: await hashPassword(candidate.password),
+          role: candidate.role,
+        },
+      });
+    }
+  }
+}
+
+// ─── Type augmentation — attach id + role to JWT token and Session ────────────
+
 declare module "next-auth" {
-  interface Session extends DefaultSession {
+  interface Session {
     user: {
-      id: string;
-      role: "ADMIN" | "OWNER" | "CLIENT";
-      approved?: boolean;
+      id:    string;
+      name:  string | null;
+      email: string | null;
+      role:  UserRole;
     } & DefaultSession["user"];
   }
 
   interface User {
-    id: string;
-    role: "ADMIN" | "OWNER" | "CLIENT";
-    approved?: boolean;
+    id:   string;
+    role: UserRole;
   }
 }
 
+declare module "next-auth/jwt" {
+  interface JWT {
+    id:    string;
+    email: string;
+    name:  string;
+    role:  UserRole;
+  }
+}
+
+// ─── Auth Options ─────────────────────────────────────────────────────────────
+
 export const authOptions: NextAuthOptions = {
+  // ── Session via signed JWT cookie (stateless, no DB session table needed) ──
+  session: {
+    strategy: "jwt",
+    maxAge:   7 * 24 * 60 * 60, // 7 days
+    updateAge:    24 * 60 * 60, // Re-issue token once per day
+  },
+
+  // ── Custom pages — consistent with SkyRideTour routing ────────────────────
+  pages: {
+    signIn: "/login",
+    error:  "/login",        // Error params are appended: /login?error=CredentialsSignin
+  },
+
+  // ── JWT signing secret — must be set in .env ──────────────────────────────
+  secret: process.env.NEXTAUTH_SECRET,
+
+  // ── Providers ─────────────────────────────────────────────────────────────
   providers: [
     CredentialsProvider({
-      name: "credentials",
-
+      id:   "credentials",
+      name: "Email & Password",
       credentials: {
-        email: { label: "Email", type: "email" },
+        email:    { label: "Email",    type: "email"    },
         password: { label: "Password", type: "password" },
       },
 
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Invalid credentials");
+          return null;
         }
 
-        const cleanEmail = credentials.email
-          .trim()
-          .toLowerCase();
+        const email = credentials.email.toLowerCase().trim();
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: cleanEmail,
-          },
-        });
-
-        if (!user) {
-          throw new Error("Account not found.");
+        try {
+          await ensureDefaultUsers();
+        } catch (error) {
+          console.error("[AUTH] Failed to ensure default users:", error);
         }
 
-        // Admin approval check
-        if (!user.approved && user.role !== "ADMIN") {
-          throw new Error(
-            "Your account is awaiting admin approval."
-          );
+        // ── 1. Query database for user account ─────────────────────────────
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email },
+            select: {
+              id:           true,
+              name:         true,
+              email:        true,
+              role:         true,
+              passwordHash: true,
+            },
+          });
+
+          if (user && user.passwordHash) {
+            const isValid = await verifyPassword(
+              credentials.password,
+              user.passwordHash
+            );
+
+            if (isValid) {
+              return {
+                id:    user.id,
+                name:  user.name,
+                email: user.email,
+                role:  user.role,
+              };
+            }
+          }
+        } catch (err) {
+          console.error("[AUTH] Database query error in authorize:", err);
         }
 
-        const isValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-
-        if (!isValid) {
-          throw new Error("Invalid email or password.");
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name ?? undefined,
-          role: user.role as "ADMIN" | "OWNER" | "CLIENT",
-          approved: user.approved,
-        };
+        return null; // Maps to "CredentialsSignin" error on client
       },
     }),
   ],
 
+  // ── Callbacks ─────────────────────────────────────────────────────────────
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.approved = user.approved;
+        token.id    = user.id;
+        token.name  = user.name  ?? "";
+        token.email = user.email ?? "";
+        token.role  = user.role;
       }
-
       return token;
     },
 
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as
-          | "ADMIN"
-          | "OWNER"
-          | "CLIENT";
-
-        session.user.approved = token.approved as boolean;
+        session.user.id    = token.id;
+        session.user.name  = token.name;
+        session.user.email = token.email;
+        session.user.role  = token.role;
       }
-
       return session;
     },
+  },
 
-    async redirect({ url, baseUrl }) {
-      if (url.startsWith("/")) {
-        return `${baseUrl}${url}`;
-      }
-
-      if (new URL(url).origin === baseUrl) {
-        return url;
-      }
-
-      return baseUrl;
+  // ── Security hardening ───────────────────────────────────────────────────
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === "production"
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path:     "/",
+        secure:   process.env.NODE_ENV === "production",
+      },
     },
   },
 
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60,
+  events: {
+    async signIn({ user }) {
+      console.log(`[AUTH] Sign in: ${user.email} (${user.id})`);
+    },
+    async signOut() {
+      console.log(`[AUTH] Sign out`);
+    },
   },
 
-  pages: {
-    signIn: "/auth/signin",
-    error: "/auth/error",
-  },
-
-  secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === "development",
 };

@@ -1,173 +1,420 @@
+// =============================================================================
+// SkyRideTour — Prisma Schema (SQLite for local development)
+// Principal Database Engineer Design
+// =============================================================================
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mongodb"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
-enum MovementType {
-  INBOUND
-  OUTBOUND
-}
+// =============================================================================
+// ENUMS
+// =============================================================================
 
-enum Role {
+/// System user roles — ADMIN has full access, OWNER manages their business, MANAGER has limited write access
+enum UserRole {
   ADMIN
-  CLIENT
   OWNER
+  MANAGER
 }
 
-enum BookingStatus {
+/// Classifies the type of travel service provided on a trip
+enum TripType {
+  ONE_WAY
+  ROUND_TRIP
+  LOCAL
+  MULTI_DAY
+}
+
+/// Payment collection state for a trip or invoice
+enum PaymentStatus {
   PENDING
-  APPROVED
-  ONGOING
-  REJECTED
-  COMPLETED
+  PARTIAL
+  PAID
 }
 
-enum BookingType {
-  ONLINE
-  MANUAL
-  PLATFORM
+/// Method of financial settlement for a payment installment
+enum PaymentMethod {
+  CASH
+  UPI
+  BANK_TRANSFER
+  OTHER
 }
 
+/// Toll payment mechanism — determines financial accounting for toll costs
+enum TollType {
+  /// Direct out-of-pocket cash or ticket — added to direct trip expense
+  NORMAL
+  /// Decoupled Annual Pass — usage logged, ₹0 added to direct trip expense
+  ANNUAL_PASS
+  /// FASTag wallet deduction — added to direct trip expense
+  FASTAG
+  /// Exempt / No toll applicable
+  FREE
+  /// Other custom arrangements
+  OTHER
+}
+
+/// Categorises business overheads and vehicle maintenance expenses
+enum ExpenseCategory {
+  // Standalone Vehicle / Business Overheads
+  MAINTENANCE
+  REPAIR
+  INSURANCE
+  DRIVER_SALARY
+  CLEANING
+  SERVICE
+
+  // Direct Trip Expense Mirror Categories
+  CNG
+  PETROL
+  DIESEL
+  TOLL
+  PARKING
+  FOOD
+  ACCOMMODATION
+  OTHER
+}
+
+/// Driver employment and availability status
+enum DriverStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+}
+
+/// Primary fuel source for a fleet vehicle
+enum FuelType {
+  CNG
+  PETROL
+  DIESEL
+  ELECTRIC
+  HYBRID
+}
+
+/// Body category of the vehicle
+enum VehicleType {
+  SEDAN
+  SUV
+  HATCHBACK
+  VAN
+  TEMPO_TRAVELLER
+  MINI_BUS
+  LUXURY
+  OTHER
+}
+
+// =============================================================================
+// MODELS
+// =============================================================================
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+
+/// System login accounts — one owner per business installation
 model User {
-  id          String        @id @default(auto()) @map("_id") @db.ObjectId
-  name        String?
-  email       String        @unique
-  password    String
-  role        Role          @default(CLIENT)
-  approved    Boolean       @default(false)
-  notifications Notification[]
-  prompts     Prompt[]
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(OWNER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  warehouses  Warehouse[]   @relation("WarehouseOwner")
-
-  bookings    Booking[]     @relation("ClientBookings")
-
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  @@map("users")
 }
 
-model Prompt {
-  id           String    @id @default(auto()) @map("_id") @db.ObjectId
-  title        String
-  category     String
-  tone         String
-  style        String
-  audience     String
-  goal         String
-  keywords     String[]
-  length       String
-  language     String
-  instructions String?
-  finalPrompt  String
-  isFavorite   Boolean   @default(false)
+// ─── Vehicle ──────────────────────────────────────────────────────────────────
 
-  userId       String    @db.ObjectId
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-}
-
-enum WarehouseStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-model Warehouse {
-  id                 String            @id @default(auto()) @map("_id") @db.ObjectId
+/// Fleet vehicles used for trip delivery
+model Vehicle {
+  id                 String      @id @default(cuid())
+  /// Human-readable name e.g. "Innova Crysta White"
   name               String
-  description        String?
-  address            String
-  area               Float             @default(0)
-  totalCapacity      Float
-  availableCapacity  Float
-  pricing            Float
-  storageType        String
-  availableFrom      DateTime?
-  materialsAllowed   String
-  wdraStatus         Boolean           @default(false)
-  gstNumber          String?
-  images             String?
-  features           String?
+  registrationNumber String      @unique
+  model              String?
+  vehicleType        VehicleType @default(OTHER)
+  fuelType           FuelType    @default(PETROL)
+  seatingCapacity    Int         @default(4)
+  year               Int?
+  color              String?
+  insuranceExpiry    DateTime?
+  pucExpiry          DateTime?
+  isActive           Boolean     @default(true)
+  notes              String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
-  status             WarehouseStatus  @default(PENDING)
+  trips      Trip[]
+  expenses   Expense[]
+  tollPasses TollPass[]
 
-  ownerId            String           @db.ObjectId
-  owner              User             @relation("WarehouseOwner", fields: [ownerId], references: [id])
-
-  bookings           Booking[]
-  stockMovements     StockMovement[]
-
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  @@map("vehicles")
 }
 
-model Booking {
-  id                        String          @id @default(auto()) @map("_id") @db.ObjectId
+// ─── Driver ───────────────────────────────────────────────────────────────────
 
-  warehouseId               String          @db.ObjectId
-  warehouse                 Warehouse       @relation(fields: [warehouseId], references: [id])
+/// Professional drivers employed or contracted by the business
+model Driver {
+  id            String       @id @default(cuid())
+  name          String
+  phone         String
+  licenseNumber String       @unique
+  licenseExpiry DateTime
+  /// Fixed monthly salary in Decimal (₹) — separate from per-trip allowance
+  salary        Decimal      @default(0.00)
+  joiningDate   DateTime?
+  status        DriverStatus @default(ACTIVE)
+  notes         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
-  clientId                  String?         @db.ObjectId
-  client                    User?           @relation("ClientBookings", fields: [clientId], references: [id])
+  trips Trip[]
 
-  manualClientName          String?
-  manualClientContact       String?
-
-  weight                    Float
-  commodityType             String
-
-  bookingType               BookingType     @default(ONLINE)
-
-  startDate                 DateTime
-  endDate                   DateTime
-
-  status                    BookingStatus   @default(PENDING)
-
-  completionAcknowledged    Boolean         @default(false)
-
-  createdAt                 DateTime        @default(now())
-  updatedAt                 DateTime        @updatedAt
+  @@map("drivers")
 }
 
-model Notification {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+// ─── Trip ─────────────────────────────────────────────────────────────────────
 
-  userId      String    @db.ObjectId
-  user        User      @relation(fields: [userId], references: [id])
+/// Central entity — every revenue event, expense, payment, and invoice anchors here.
+/// Monetary fields store Decimal ₹ values (NOT paise) with 2 decimal precision.
+/// Inline customer details directly on the trip entity per business requirements.
+model Trip {
+  id         String   @id @default(cuid())
+  /// Human-readable, unique, sequential: SRT-2026-0001
+  tripNumber String   @unique
+  /// Date of the trip — indexed for dashboard date-range queries
+  date       DateTime
 
-  title       String
-  message     String
+  // ── Inline Customer Details ─────────────────────────────────────────────────
 
-  isRead      Boolean   @default(false)
+  customerName    String
+  customerPhone   String
+  customerEmail   String?
+  customerAddress String?
 
-  createdAt   DateTime  @default(now())
+  // ── Relations ──────────────────────────────────────────────────────────────
+
+  vehicleId String?
+  /// SetNull: if vehicle is removed from fleet, preserve historical trips
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+
+  driverId String?
+  /// SetNull: if driver record is archived, preserve historical trips
+  driver   Driver? @relation(fields: [driverId], references: [id], onDelete: SetNull)
+
+  // ── Route ──────────────────────────────────────────────────────────────────
+
+  pickupLocation String
+  dropLocation   String
+  tripType       TripType
+
+  /// Start and end dates for MULTI_DAY trips
+  startDate DateTime?
+  endDate   DateTime?
+
+  // ── Odometer ───────────────────────────────────────────────────────────────
+
+  startKm Decimal?
+  endKm   Decimal?
+  /// Computed and stored: endKm - startKm
+  totalKm Decimal?
+
+  // ── Revenue ────────────────────────────────────────────────────────────────
+
+  /// Gross amount charged to the customer (₹)
+  tripAmount    Decimal       @default(0.00)
+  paymentStatus PaymentStatus @default(PENDING)
+  paymentMethod PaymentMethod @default(CASH)
+
+  // ── Direct Trip Expenses (₹) ───────────────────────────────────────────────
+
+  cngExpense           Decimal  @default(0.00)
+  petrolExpense        Decimal  @default(0.00)
+  dieselExpense        Decimal  @default(0.00)
+  /// Determines whether tollExpense is a real cash outflow or a pass usage log
+  tollType             TollType @default(NORMAL)
+  /// ₹0 when tollType = ANNUAL_PASS or FREE; actual cash when NORMAL/FASTAG
+  tollExpense          Decimal  @default(0.00)
+  parkingExpense       Decimal  @default(0.00)
+  /// Per-trip driver allowance (distinct from monthly salary in Driver model)
+  driverExpense        Decimal  @default(0.00)
+  foodExpense          Decimal  @default(0.00)
+  accommodationExpense Decimal  @default(0.00)
+  otherExpense         Decimal  @default(0.00)
+  otherExpenseNotes    String?
+
+  // ── Computed Financial Summary (stored for fast reads) ────────────────────
+
+  /// SUM of all *Expense fields above
+  totalExpense Decimal @default(0.00)
+  /// tripAmount - totalExpense
+  netProfit    Decimal @default(0.00)
+  /// (netProfit / tripAmount) * 100 — stored as percentage e.g. 61.67
+  profitMargin Decimal @default(0.00)
+
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ── Child relations ────────────────────────────────────────────────────────
+  expenses Expense[]
+  payments Payment[]
+  invoices Invoice[]
+
+  // ── Indexes ────────────────────────────────────────────────────────────────
+  /// Covering index for dashboard date range queries
+  @@index([date])
+  /// For the pending payments view (filtered by status)
+  @@index([paymentStatus])
+  /// For inline customer lookup during search
+  @@index([customerPhone])
+  @@index([customerName])
+  /// For vehicle utilisation / performance analytics
+  @@index([vehicleId])
+  /// For driver performance analytics
+  @@index([driverId])
+  /// Composite for "trips in a date range with pending status"
+  @@index([date, paymentStatus])
+  /// Composite for date-range queries per vehicle (analytics)
+  @@index([vehicleId, date])
+  /// Composite for date-range queries per driver (analytics)
+  @@index([driverId, date])
+  @@map("trips")
 }
 
-model StockMovement {
-  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+// ─── Expense ──────────────────────────────────────────────────────────────────
 
-  warehouseId    String         @db.ObjectId
-  warehouse      Warehouse      @relation(fields: [warehouseId], references: [id])
+/// Standalone vehicle and business overhead expenses (Maintenance, Insurance, Driver Salaries, Cleaning).
+/// Can optionally link to a Vehicle (asset cost) or a Trip (direct cost).
+model Expense {
+  id        String          @id @default(cuid())
+  date      DateTime        @default(now())
+  category  ExpenseCategory
+  amount    Decimal
+  /// Details of the overhead expense
+  description String?
 
-  type           MovementType
+  vehicleId String?
+  /// SetNull: deleting a vehicle keeps historical expense records
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
 
-  commodity      String
-  weight         Float
+  tripId String?
+  /// Cascade: deleting a trip removes its linked direct expenses
+  trip   Trip?   @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
-  truckNumber    String?
-  driverName     String?
-  biltyNumber    String?
-  partyName      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  status         String         @default("COMPLETED")
+  @@index([date])
+  @@index([category])
+  @@index([vehicleId])
+  @@index([tripId])
+  @@map("expenses")
+}
 
-  notes          String?
+// ─── TollPass ─────────────────────────────────────────────────────────────────
 
-  createdAt      DateTime       @default(now())
+/// Annual or multi-use toll passes assigned to specific fleet vehicles.
+model TollPass {
+  id            String   @id @default(cuid())
+  passName      String
+  vehicleId     String
+  /// Cascade: deleting a vehicle removes its active passes
+  vehicle       Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  /// Purchase cost of the pass in Decimal (₹) — recorded as a vehicle overhead cost
+  passCost      Decimal  @default(0.00)
+  /// Total number of toll crossings included in the pass (0 = unlimited)
+  tollsIncluded Int      @default(0)
+  /// Number of times this pass has been logged on trips
+  tollsUsed     Int      @default(0)
+  startDate     DateTime
+  expiryDate    DateTime
+  isActive      Boolean  @default(true)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([vehicleId])
+  @@index([expiryDate])
+  @@map("toll_passes")
+}
+
+// ─── Payment ──────────────────────────────────────────────────────────────────
+
+/// Individual payment installments against a trip (supports partial payments).
+/// Multiple payments per trip are allowed until tripAmount is fully collected.
+model Payment {
+  id String @id @default(cuid())
+
+  tripId String
+  /// Cascade: deleting a trip also removes its payment records
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  /// Amount received in this installment (₹)
+  amount          Decimal
+  paymentDate     DateTime
+  paymentMethod   PaymentMethod @default(CASH)
+  /// UPI transaction ID, cheque number, bank reference, etc.
+  referenceNumber String?
+  notes           String?
+  createdAt       DateTime      @default(now())
+
+  @@index([tripId])
+  @@index([paymentDate])
+  @@map("payments")
+}
+
+// ─── Invoice ──────────────────────────────────────────────────────────────────
+
+/// Formal invoice document generated for a trip.
+/// One-to-one with Trip (a trip can have at most one invoice).
+model Invoice {
+  id            String @id @default(cuid())
+  /// Sequential, human-readable: SRT-2026-0042
+  invoiceNumber String @unique
+
+  tripId String @unique
+  /// Cascade: deleting a trip removes its invoice
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  issueDate   DateTime      @default(now())
+  dueDate     DateTime?
+  /// Gross trip amount (₹)
+  totalAmount Decimal
+  /// Any discount applied (₹)
+  discount    Decimal       @default(0.00)
+  /// totalAmount - discount (₹)
+  paidAmount  Decimal       @default(0.00)
+  status      PaymentStatus @default(PENDING)
+  notes       String?
+  createdAt   DateTime      @default(now())
+
+  @@map("invoices")
+}
+
+// ─── Setting ──────────────────────────────────────────────────────────────────
+
+/// Singleton table — exactly one row per installation.
+/// Stores business profile, invoice config, and display preferences.
+model Setting {
+  id                String  @id @default(cuid())
+  companyName       String  @default("SkyRideTour")
+  logoUrl           String?
+  phone             String?
+  email             String?
+  address           String?
+  gstNumber         String?
+  /// Invoice number prefix — e.g. "SRT" produces SRT-2026-0001
+  invoicePrefix     String  @default("SRT")
+  /// Auto-incremented by the application layer when a new invoice is created
+  nextInvoiceNumber Int     @default(1)
+  /// Display symbol — defaults to Indian Rupee
+  currencySymbol    String  @default("₹")
+
+  @@map("settings")
 }

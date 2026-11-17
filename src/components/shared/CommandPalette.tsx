@@ -1,135 +1,130 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { 
-  Command, 
-  Search, 
-  Warehouse, 
-  ClipboardList, 
-  BarChart3, 
-  Settings, 
-  User,
-  Zap
-} from "lucide-react";
-import { 
-  Dialog, 
-  DialogContent 
-} from "@/components/ui/dialog";
+// =============================================================================
+// SkyRideTour — Command Palette Modal (Step 18)
+// Triggered via Cmd+K / Ctrl+K or search bar click in Header.
+// =============================================================================
+
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Search, X, User, Route, Car, UserCheck, ArrowRight, Loader2 } from "lucide-react";
+import { globalSearch, type SearchResultItem } from "@/server/actions/search";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
-export function CommandPalette() {
-  const [open, setOpen] = useState(false);
+const TYPE_ICONS = {
+  customer: User,
+  trip:     Route,
+  vehicle:  Car,
+  driver:   UserCheck,
+};
+
+const TYPE_COLORS = {
+  customer: "bg-blue-50 text-blue-600",
+  trip:     "bg-emerald-50 text-emerald-600",
+  vehicle:  "bg-violet-50 text-violet-600",
+  driver:   "bg-amber-50 text-amber-600",
+};
+
+export function CommandPalette({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
   const router = useRouter();
+  const [query, setQuery]     = useState("");
+  const [results, setResults] = useState<SearchResultItem[]>([]);
+  const [isPending, startTx]  = useTransition();
 
   useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setOpen((open) => !open);
-      }
-    };
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
-  }, []);
+    if (!open) {
+      setQuery("");
+      setResults([]);
+    }
+  }, [open]);
 
-  const runCommand = (command: () => void) => {
-    setOpen(false);
-    command();
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults([]);
+      return;
+    }
+
+    const t = setTimeout(() => {
+      startTx(async () => {
+        const res = await globalSearch(query);
+        if (res.success) setResults(res.data);
+      });
+    }, 250);
+
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const handleSelect = (url: string) => {
+    onClose();
+    router.push(url);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="p-0 border-none bg-transparent shadow-2xl overflow-hidden max-w-2xl top-[20%]">
-        <div className="bg-white/80 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-2xl shadow-slate-900/10 overflow-hidden">
-          <div className="flex items-center px-6 py-4 border-b border-slate-100">
-            <Search className="h-5 w-5 text-indigo-500 mr-3" />
-            <input 
-              placeholder="Search anything... (Try 'Bookings' or 'Reports')"
-              className="flex-1 bg-transparent border-none outline-none text-slate-900 placeholder:text-slate-400 text-lg"
-              autoFocus
-            />
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 rounded-lg border border-slate-200">
-              <span className="text-[10px] font-bold text-slate-500">ESC</span>
-            </div>
-          </div>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-xl p-0 overflow-hidden rounded-2xl border border-[var(--border)] shadow-2xl">
+        <div className="flex items-center px-4 border-b border-[var(--border)] bg-[var(--card)]">
+          <Search className="w-5 h-5 text-[var(--muted-foreground)] flex-shrink-0" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search customers, trips, vehicles, drivers... (Cmd+K)"
+            autoFocus
+            className="w-full px-3 py-4 text-base bg-transparent text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none"
+          />
+          {isPending ? (
+            <Loader2 className="w-4 h-4 animate-spin text-[var(--muted-foreground)]" />
+          ) : query ? (
+            <button onClick={() => setQuery("")} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+              <X className="w-4 h-4" />
+            </button>
+          ) : null}
+        </div>
 
-          <div className="p-4 space-y-6 max-h-[400px] overflow-y-auto">
-            <div>
-              <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Navigation</p>
-              <div className="space-y-1">
-                <CommandItem 
-                  icon={Warehouse} 
-                  label="Warehouses" 
-                  shortcut="G W" 
-                  onClick={() => runCommand(() => router.push("/dashboard/warehouse/warehouses"))}
-                />
-                <CommandItem 
-                  icon={ClipboardList} 
-                  label="Bookings" 
-                  shortcut="G B" 
-                  onClick={() => runCommand(() => router.push("/dashboard/warehouse/bookings"))}
-                />
-                <CommandItem 
-                  icon={BarChart3} 
-                  label="Reports" 
-                  shortcut="G R" 
-                  onClick={() => runCommand(() => router.push("/dashboard/warehouse/reports"))}
-                />
-              </div>
+        <div className="max-h-[350px] overflow-y-auto p-2">
+          {!query.trim() ? (
+            <div className="p-8 text-center text-xs text-[var(--muted-foreground)]">
+              Type at least 2 characters to search across SkyRideTour.
             </div>
-
-            <div>
-              <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Quick Actions</p>
-              <div className="space-y-1">
-                <CommandItem 
-                  icon={Zap} 
-                  label="Add New Warehouse" 
-                  color="emerald"
-                  onClick={() => runCommand(() => router.push("/dashboard/warehouse/warehouses?add=true"))}
-                />
-                <CommandItem 
-                  icon={User} 
-                  label="Switch Profile" 
-                  onClick={() => runCommand(() => router.push("/dashboard"))}
-                />
-              </div>
+          ) : results.length === 0 && !isPending ? (
+            <div className="p-8 text-center text-sm text-[var(--muted-foreground)]">
+              No results found for &quot;{query}&quot;
             </div>
-          </div>
-
-          <div className="px-6 py-3 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
-            <p className="text-[10px] text-slate-400 font-medium">Use arrow keys to navigate</p>
-            <div className="flex items-center gap-1">
-              <Zap className="h-3 w-3 text-indigo-500 animate-pulse" />
-              <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Powered by Antigravity</span>
+          ) : (
+            <div className="space-y-1">
+              {results.map((item) => {
+                const Icon = TYPE_ICONS[item.type];
+                const color = TYPE_COLORS[item.type];
+                return (
+                  <button
+                    key={`${item.type}-${item.id}`}
+                    onClick={() => handleSelect(item.url)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--muted)]/50 transition-colors text-left group"
+                  >
+                    <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0", color)}>
+                      <Icon className="w-4.5 h-4.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-[var(--foreground)] truncate group-hover:text-[var(--primary)] transition-colors">
+                        {item.title}
+                      </p>
+                      <p className="text-xs text-[var(--muted-foreground)] truncate mt-0.5">{item.subtitle}</p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-[var(--muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </button>
+                );
+              })}
             </div>
-          </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function CommandItem({ icon: Icon, label, shortcut, color = "indigo", onClick }: any) {
-  const colorClasses: any = {
-    indigo: "text-indigo-500 group-hover:bg-indigo-50",
-    emerald: "text-emerald-500 group-hover:bg-emerald-50",
-  };
-
-  return (
-    <button 
-      onClick={onClick}
-      className="w-full flex items-center justify-between px-4 py-3 rounded-2xl group hover:bg-slate-50 transition-all duration-200 text-left"
-    >
-      <div className="flex items-center gap-3">
-        <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center transition-premium", colorClasses[color])}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <span className="font-bold text-slate-700 group-hover:text-slate-900">{label}</span>
-      </div>
-      {shortcut && (
-        <span className="text-[10px] font-bold text-slate-300 group-hover:text-slate-400 tracking-widest">{shortcut}</span>
-      )}
-    </button>
   );
 }

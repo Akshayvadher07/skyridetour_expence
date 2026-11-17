@@ -1,0 +1,5 @@
+// Placeholder for server actions — will be populated in Phase 2
+// Actions will follow the pattern:
+//   export async function createTrip(input: CreateTripInput): Promise<ActionResult<Trip>>
+
+export {};
