@@ -18,6 +18,7 @@ const PROTECTED_PREFIXES = [
   "/vehicles",
   "/drivers",
   "/expenses",
+  "/toll-passes",
   "/payments",
   "/analytics",
   "/reports",
