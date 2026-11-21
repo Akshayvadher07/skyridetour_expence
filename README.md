@@ -79,6 +79,17 @@ The local connection string `mongodb://localhost:27017/skyridetour` is only reac
 
 The `postinstall` script generates Prisma Client during Vercel's install/build. Apply schema changes to the hosted database with `npx prisma db push` from a trusted environment using the production `DATABASE_URL`; do not run the seed script against production because it clears existing records.
 
+### Initial Owner Account
+
+Set `SEED_OWNER_EMAIL`, `SEED_OWNER_PASSWORD`, and `OWNER_INIT_TOKEN` in the Vercel project environment variables. Use a strong owner password and generate a separate random initialization token of at least 32 characters. After deploying, call the setup endpoint once from a trusted terminal:
+
+```bash
+curl --request POST "$VERCEL_URL/api/setup/owner" \
+	--header "Authorization: Bearer $OWNER_INIT_TOKEN"
+```
+
+The endpoint stores only a bcrypt password hash and returns `already_initialized` on subsequent calls. It does not return the configured email or password. After successful initialization, remove `OWNER_INIT_TOKEN` and `SEED_OWNER_PASSWORD` from Vercel and redeploy; the owner can continue signing in with the created account.
+
 ---
 
 ## 📁 Project Structure

@@ -5,50 +5,9 @@
 
 import { NextAuthOptions, DefaultSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { hashPassword, verifyPassword } from "@/lib/auth-utils";
+import { verifyPassword } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import type { UserRole } from "@prisma/client";
-
-const DEFAULT_ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@skyridetour.com";
-const DEFAULT_ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "Admin@123";
-const DEFAULT_OWNER_EMAIL = process.env.SEED_OWNER_EMAIL ?? "owner@skyridetour.com";
-const DEFAULT_OWNER_PASSWORD = process.env.SEED_OWNER_PASSWORD ?? "SkyRide@2026";
-
-async function ensureDefaultUsers() {
-  const defaults = [
-    {
-      email: DEFAULT_ADMIN_EMAIL.toLowerCase().trim(),
-      password: DEFAULT_ADMIN_PASSWORD,
-      name: "SkyRide Admin",
-      role: "ADMIN" as const,
-    },
-    {
-      email: DEFAULT_OWNER_EMAIL.toLowerCase().trim(),
-      password: DEFAULT_OWNER_PASSWORD,
-      name: "SkyRide Owner",
-      role: "OWNER" as const,
-    },
-  ];
-
-  for (const candidate of defaults) {
-    const existing = await prisma.user.findUnique({
-      where: {
-        email: candidate.email,
-      },
-    });
-
-    if (!existing) {
-      await prisma.user.create({
-        data: {
-          name: candidate.name,
-          email: candidate.email,
-          passwordHash: await hashPassword(candidate.password),
-          role: candidate.role,
-        },
-      });
-    }
-  }
-}
 
 // ─── Type augmentation — attach id + role to JWT token and Session ────────────
 
@@ -112,12 +71,6 @@ export const authOptions: NextAuthOptions = {
         }
 
         const email = credentials.email.toLowerCase().trim();
-
-        try {
-          await ensureDefaultUsers();
-        } catch (error) {
-          console.error("[AUTH] Failed to ensure default users:", error);
-        }
 
         // ── 1. Query database for user account ─────────────────────────────
         try {
