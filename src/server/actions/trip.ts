@@ -83,6 +83,7 @@ export async function getTrips(opts?: {
       page = 1, limit = 50,
     } = opts ?? {};
 
+    const searchTerm = query?.trim() ?? "";
     const where: Prisma.TripWhereInput = {
       ...(vehicleId     && { vehicleId }),
       ...(driverId      && { driverId }),
@@ -91,13 +92,13 @@ export async function getTrips(opts?: {
       ...(dateFrom && dateTo && { date: { gte: new Date(dateFrom), lte: new Date(dateTo) } }),
       ...(dateFrom && !dateTo && { date: { gte: new Date(dateFrom) } }),
       ...(!dateFrom && dateTo && { date: { lte: new Date(dateTo) } }),
-      ...(query && {
+      ...(searchTerm && {
         OR: [
-          { tripNumber:     { contains: query, mode: "insensitive" } },
-          { customerName:   { contains: query, mode: "insensitive" } },
-          { customerPhone:  { contains: query, mode: "insensitive" } },
-          { pickupLocation: { contains: query, mode: "insensitive" } },
-          { dropLocation:   { contains: query, mode: "insensitive" } },
+          { tripNumber:     { contains: searchTerm, mode: "insensitive" } },
+          { customerName:   { contains: searchTerm, mode: "insensitive" } },
+          { customerPhone:  { contains: searchTerm, mode: "insensitive" } },
+          { pickupLocation: { contains: searchTerm, mode: "insensitive" } },
+          { dropLocation:   { contains: searchTerm, mode: "insensitive" } },
         ],
       }),
     };

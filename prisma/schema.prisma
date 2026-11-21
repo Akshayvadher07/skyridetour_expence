@@ -1,5 +1,5 @@
 // =============================================================================
-// SkyRideTour — Prisma Schema (SQLite for local development)
+// SkyRideTour — Prisma Schema (MongoDB)
 // Principal Database Engineer Design
 // =============================================================================
 
@@ -8,7 +8,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
@@ -117,7 +117,7 @@ enum VehicleType {
 
 /// System login accounts — one owner per business installation
 model User {
-  id           String   @id @default(cuid())
+  id           String   @id @default(cuid()) @map("_id")
   name         String
   email        String   @unique
   passwordHash String
@@ -132,7 +132,7 @@ model User {
 
 /// Fleet vehicles used for trip delivery
 model Vehicle {
-  id                 String      @id @default(cuid())
+  id                 String      @id @default(cuid()) @map("_id")
   /// Human-readable name e.g. "Innova Crysta White"
   name               String
   registrationNumber String      @unique
@@ -160,13 +160,13 @@ model Vehicle {
 
 /// Professional drivers employed or contracted by the business
 model Driver {
-  id            String       @id @default(cuid())
+  id            String       @id @default(cuid()) @map("_id")
   name          String
   phone         String
   licenseNumber String       @unique
   licenseExpiry DateTime
-  /// Fixed monthly salary in Decimal (₹) — separate from per-trip allowance
-  salary        Decimal      @default(0.00)
+  /// Fixed monthly salary in ₹ — separate from per-trip allowance
+  salary        Float        @default(0.00)
   joiningDate   DateTime?
   status        DriverStatus @default(ACTIVE)
   notes         String?
@@ -181,10 +181,10 @@ model Driver {
 // ─── Trip ─────────────────────────────────────────────────────────────────────
 
 /// Central entity — every revenue event, expense, payment, and invoice anchors here.
-/// Monetary fields store Decimal ₹ values (NOT paise) with 2 decimal precision.
+/// Monetary fields store numeric ₹ values (NOT paise).
 /// Inline customer details directly on the trip entity per business requirements.
 model Trip {
-  id         String   @id @default(cuid())
+  id         String   @id @default(cuid()) @map("_id")
   /// Human-readable, unique, sequential: SRT-2026-0001
   tripNumber String   @unique
   /// Date of the trip — indexed for dashboard date-range queries
@@ -219,43 +219,43 @@ model Trip {
 
   // ── Odometer ───────────────────────────────────────────────────────────────
 
-  startKm Decimal?
-  endKm   Decimal?
+  startKm Float?
+  endKm   Float?
   /// Computed and stored: endKm - startKm
-  totalKm Decimal?
+  totalKm Float?
 
   // ── Revenue ────────────────────────────────────────────────────────────────
 
   /// Gross amount charged to the customer (₹)
-  tripAmount    Decimal       @default(0.00)
+  tripAmount    Float         @default(0.00)
   paymentStatus PaymentStatus @default(PENDING)
   paymentMethod PaymentMethod @default(CASH)
 
   // ── Direct Trip Expenses (₹) ───────────────────────────────────────────────
 
-  cngExpense           Decimal  @default(0.00)
-  petrolExpense        Decimal  @default(0.00)
-  dieselExpense        Decimal  @default(0.00)
+  cngExpense           Float    @default(0.00)
+  petrolExpense        Float    @default(0.00)
+  dieselExpense        Float    @default(0.00)
   /// Determines whether tollExpense is a real cash outflow or a pass usage log
   tollType             TollType @default(NORMAL)
   /// ₹0 when tollType = ANNUAL_PASS or FREE; actual cash when NORMAL/FASTAG
-  tollExpense          Decimal  @default(0.00)
-  parkingExpense       Decimal  @default(0.00)
+  tollExpense          Float    @default(0.00)
+  parkingExpense       Float    @default(0.00)
   /// Per-trip driver allowance (distinct from monthly salary in Driver model)
-  driverExpense        Decimal  @default(0.00)
-  foodExpense          Decimal  @default(0.00)
-  accommodationExpense Decimal  @default(0.00)
-  otherExpense         Decimal  @default(0.00)
+  driverExpense        Float    @default(0.00)
+  foodExpense          Float    @default(0.00)
+  accommodationExpense Float    @default(0.00)
+  otherExpense         Float    @default(0.00)
   otherExpenseNotes    String?
 
   // ── Computed Financial Summary (stored for fast reads) ────────────────────
 
   /// SUM of all *Expense fields above
-  totalExpense Decimal @default(0.00)
+  totalExpense Float   @default(0.00)
   /// tripAmount - totalExpense
-  netProfit    Decimal @default(0.00)
+  netProfit    Float   @default(0.00)
   /// (netProfit / tripAmount) * 100 — stored as percentage e.g. 61.67
-  profitMargin Decimal @default(0.00)
+  profitMargin Float   @default(0.00)
 
   notes     String?
   createdAt DateTime @default(now())
@@ -292,10 +292,10 @@ model Trip {
 /// Standalone vehicle and business overhead expenses (Maintenance, Insurance, Driver Salaries, Cleaning).
 /// Can optionally link to a Vehicle (asset cost) or a Trip (direct cost).
 model Expense {
-  id        String          @id @default(cuid())
+  id        String          @id @default(cuid()) @map("_id")
   date      DateTime        @default(now())
   category  ExpenseCategory
-  amount    Decimal
+  amount    Float
   /// Details of the overhead expense
   description String?
 
@@ -321,13 +321,13 @@ model Expense {
 
 /// Annual or multi-use toll passes assigned to specific fleet vehicles.
 model TollPass {
-  id            String   @id @default(cuid())
+  id            String   @id @default(cuid()) @map("_id")
   passName      String
   vehicleId     String
   /// Cascade: deleting a vehicle removes its active passes
   vehicle       Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  /// Purchase cost of the pass in Decimal (₹) — recorded as a vehicle overhead cost
-  passCost      Decimal  @default(0.00)
+  /// Purchase cost of the pass in ₹ — recorded as a vehicle overhead cost
+  passCost      Float    @default(0.00)
   /// Total number of toll crossings included in the pass (0 = unlimited)
   tollsIncluded Int      @default(0)
   /// Number of times this pass has been logged on trips
@@ -349,14 +349,14 @@ model TollPass {
 /// Individual payment installments against a trip (supports partial payments).
 /// Multiple payments per trip are allowed until tripAmount is fully collected.
 model Payment {
-  id String @id @default(cuid())
+  id String @id @default(cuid()) @map("_id")
 
   tripId String
   /// Cascade: deleting a trip also removes its payment records
   trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   /// Amount received in this installment (₹)
-  amount          Decimal
+  amount          Float
   paymentDate     DateTime
   paymentMethod   PaymentMethod @default(CASH)
   /// UPI transaction ID, cheque number, bank reference, etc.
@@ -374,7 +374,7 @@ model Payment {
 /// Formal invoice document generated for a trip.
 /// One-to-one with Trip (a trip can have at most one invoice).
 model Invoice {
-  id            String @id @default(cuid())
+  id            String @id @default(cuid()) @map("_id")
   /// Sequential, human-readable: SRT-2026-0042
   invoiceNumber String @unique
 
@@ -385,11 +385,11 @@ model Invoice {
   issueDate   DateTime      @default(now())
   dueDate     DateTime?
   /// Gross trip amount (₹)
-  totalAmount Decimal
+  totalAmount Float
   /// Any discount applied (₹)
-  discount    Decimal       @default(0.00)
+  discount    Float         @default(0.00)
   /// totalAmount - discount (₹)
-  paidAmount  Decimal       @default(0.00)
+  paidAmount  Float         @default(0.00)
   status      PaymentStatus @default(PENDING)
   notes       String?
   createdAt   DateTime      @default(now())
@@ -402,7 +402,7 @@ model Invoice {
 /// Singleton table — exactly one row per installation.
 /// Stores business profile, invoice config, and display preferences.
 model Setting {
-  id                String  @id @default(cuid())
+  id                String  @id @default(cuid()) @map("_id")
   companyName       String  @default("SkyRideTour")
   logoUrl           String?
   phone             String?

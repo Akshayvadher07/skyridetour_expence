@@ -62,12 +62,13 @@ export async function getDrivers(
   query = ""
 ): Promise<ActionResult<DriverListItem[]>> {
   try {
-    const where: Prisma.DriverWhereInput = query
+    const searchTerm = query.trim();
+    const where: Prisma.DriverWhereInput = searchTerm
       ? {
           OR: [
-            { name:          { contains: query, mode: "insensitive" } },
-            { phone:         { contains: query, mode: "insensitive" } },
-            { licenseNumber: { contains: query, mode: "insensitive" } },
+            { name:          { contains: searchTerm, mode: "insensitive" } },
+            { phone:         { contains: searchTerm, mode: "insensitive" } },
+            { licenseNumber: { contains: searchTerm, mode: "insensitive" } },
           ],
         }
       : {};

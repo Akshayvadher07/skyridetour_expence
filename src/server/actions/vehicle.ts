@@ -86,13 +86,14 @@ export async function getVehicles(
   onlyActive = false
 ): Promise<ActionResult<VehicleListItem[]>> {
   try {
+    const searchTerm = query.trim();
     const where: Prisma.VehicleWhereInput = {
       ...(onlyActive && { isActive: true }),
-      ...(query && {
+      ...(searchTerm && {
         OR: [
-          { name:               { contains: query, mode: "insensitive" } },
-          { registrationNumber: { contains: query, mode: "insensitive" } },
-          { model:              { contains: query, mode: "insensitive" } },
+          { name:               { contains: searchTerm, mode: "insensitive" } },
+          { registrationNumber: { contains: searchTerm, mode: "insensitive" } },
+          { model:              { contains: searchTerm, mode: "insensitive" } },
         ],
       }),
     };

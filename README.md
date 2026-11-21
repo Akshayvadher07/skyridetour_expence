@@ -1,6 +1,6 @@
-# 🚛 BharatGodam Booking & Management ERP
+# SkyRideTour Travel & Expense Management
 
-An enterprise-grade logistics and warehouse booking system designed for **BharatGodam**, featuring role-based dashboards, secure capacity management, transaction-safe booking operations, and a modern industrial user interface.
+Travel fleet, trip, payment, invoice, and expense management built with Next.js, Prisma, and MongoDB.
 
 ---
 
@@ -35,7 +35,7 @@ Seamless workspaces customized for:
 ## 🛠️ Technology Stack
 - **Framework:** [Next.js 16 (Turbopack Enabled)](https://nextjs.org/)
 - **Database ORM:** [Prisma](https://www.prisma.io/)
-- **Database Engine:** SQLite (Local Setup)
+- **Database Engine:** MongoDB
 - **Styling:** Tailwind CSS v4 & PostCSS
 - **Animation:** [Framer Motion](https://www.framer.com/motion/)
 - **Authentication:** [NextAuth.js](https://next-auth.js.org/)
@@ -53,10 +53,10 @@ Clone the repository and install the dependencies:
 npm install
 ```
 
-### 2. Database Sync & Seed
-Generate the Prisma Client and migrate the local SQLite schema:
+### 2. Database Setup
+Run MongoDB locally, then generate the Prisma Client and sync the schema:
 ```bash
-# Push schema updates
+# Push schema updates to the `skyridetour` database
 npx prisma db push
 
 # Regenerate Prisma Client
@@ -69,11 +69,21 @@ npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+## Vercel Deployment
+
+The local connection string `mongodb://localhost:27017/skyridetour` is only reachable from your development machine. Vercel cannot connect to your computer's localhost. Create a hosted MongoDB database (such as MongoDB Atlas), allow Vercel's outbound connections according to your provider's network policy, and set these Vercel project environment variables for Production (and Preview if needed):
+
+- `DATABASE_URL`: the hosted MongoDB connection string, including the `skyridetour` database name
+- `NEXTAUTH_SECRET`: a unique, random secret of at least 32 characters
+- `NEXTAUTH_URL`: your deployed application URL
+
+The `postinstall` script generates Prisma Client during Vercel's install/build. Apply schema changes to the hosted database with `npx prisma db push` from a trusted environment using the production `DATABASE_URL`; do not run the seed script against production because it clears existing records.
+
 ---
 
 ## 📁 Project Structure
 ```text
-├── prisma/               # Prisma schema and SQLite dev database
+├── prisma/               # Prisma schema and MongoDB setup
 ├── src/
 │   ├── app/              # Next.js App Router (pages & layouts)
 │   │   ├── admin/        # Admin portal
