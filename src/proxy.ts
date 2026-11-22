@@ -73,6 +73,14 @@ export default withAuth(
     return NextResponse.next();
   },
   {
+    secret: process.env.NEXTAUTH_SECRET,
+    cookies: {
+      sessionToken: {
+        name: process.env.NODE_ENV === "production"
+          ? "__Secure-next-auth.session-token"
+          : "next-auth.session-token",
+      },
+    },
     callbacks: {
       /**
        * Always return true so our proxy function above handles all redirect logic.

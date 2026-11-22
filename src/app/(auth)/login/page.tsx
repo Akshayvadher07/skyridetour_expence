@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { getSession, signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useForm }           from "react-hook-form";
 import { zodResolver }       from "@hookform/resolvers/zod";
@@ -39,7 +39,6 @@ const AUTH_ERRORS: Record<string, string> = {
 // ─── Inner component (uses useSearchParams — must be inside Suspense) ─────────
 
 function LoginForm() {
-  const router       = useRouter();
   const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [authError,    setAuthError]    = useState<string | null>(null);
@@ -51,8 +50,6 @@ function LoginForm() {
       setAuthError(AUTH_ERRORS[errorCode] ?? AUTH_ERRORS.default);
     }
   }, [searchParams]);
-
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
 
   const {
     register,
@@ -69,7 +66,7 @@ function LoginForm() {
         email:       data.email.toLowerCase().trim(),
         password:    data.password,
         redirect:    false,
-        callbackUrl,
+        callbackUrl: "/",
       });
 
       if (!result) {
@@ -77,22 +74,18 @@ function LoginForm() {
         return;
       }
 
-      if (result.error) {
+      if (!result.ok || result.error) {
         // Don't expose raw error code — map to user-friendly message
-        setAuthError(AUTH_ERRORS[result.error] ?? AUTH_ERRORS.default);
-        toast.error("Sign in failed", { description: AUTH_ERRORS[result.error] ?? AUTH_ERRORS.default });
+        const message = result.error
+          ? AUTH_ERRORS[result.error] ?? AUTH_ERRORS.default
+          : AUTH_ERRORS.default;
+        setAuthError(message);
+        toast.error("Sign in failed", { description: message });
         return;
       }
 
       toast.success("Welcome back!", { description: "Redirecting to your dashboard…" });
-      const session = await getSession();
-      const dashboardUrl = session?.user?.role === "CLIENT"
-        ? "/client/dashboard"
-        : session?.user?.role === "ADMIN"
-          ? "/admin"
-          : result.url ?? callbackUrl;
-      router.push(dashboardUrl);
-      router.refresh();
+      window.location.replace("/");
     } catch {
       setAuthError("Something went wrong. Please try again.");
       toast.error("Unexpected error. Please try again.");
