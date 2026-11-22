@@ -16,11 +16,12 @@ datasource db {
 // ENUMS
 // =============================================================================
 
-/// System user roles — ADMIN has full access, OWNER manages their business, MANAGER has limited write access
+/// System user roles — public registration creates CLIENT accounts only
 enum UserRole {
   ADMIN
   OWNER
   MANAGER
+  CLIENT
 }
 
 /// Classifies the type of travel service provided on a trip
@@ -120,8 +121,9 @@ model User {
   id           String   @id @default(cuid()) @map("_id")
   name         String
   email        String   @unique
+  phone        String?
   passwordHash String
-  role         UserRole @default(OWNER)
+  role         UserRole @default(CLIENT)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -251,11 +253,11 @@ model Trip {
   // ── Computed Financial Summary (stored for fast reads) ────────────────────
 
   /// SUM of all *Expense fields above
-  totalExpense Float   @default(0.00)
+  totalExpense Float @default(0.00)
   /// tripAmount - totalExpense
-  netProfit    Float   @default(0.00)
+  netProfit    Float @default(0.00)
   /// (netProfit / tripAmount) * 100 — stored as percentage e.g. 61.67
-  profitMargin Float   @default(0.00)
+  profitMargin Float @default(0.00)
 
   notes     String?
   createdAt DateTime @default(now())
@@ -292,10 +294,10 @@ model Trip {
 /// Standalone vehicle and business overhead expenses (Maintenance, Insurance, Driver Salaries, Cleaning).
 /// Can optionally link to a Vehicle (asset cost) or a Trip (direct cost).
 model Expense {
-  id        String          @id @default(cuid()) @map("_id")
-  date      DateTime        @default(now())
-  category  ExpenseCategory
-  amount    Float
+  id          String          @id @default(cuid()) @map("_id")
+  date        DateTime        @default(now())
+  category    ExpenseCategory
+  amount      Float
   /// Details of the overhead expense
   description String?
 

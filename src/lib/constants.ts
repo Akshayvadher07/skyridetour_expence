@@ -178,6 +178,7 @@ export const USER_ROLE_LABELS: Record<UserRole, string> = {
   ADMIN:   "Administrator",
   OWNER:   "Owner",
   MANAGER: "Manager",
+  CLIENT:  "Client",
 };
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────

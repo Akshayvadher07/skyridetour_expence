@@ -13,6 +13,8 @@ import { NextResponse }                   from "next/server";
  */
 const PROTECTED_PREFIXES = [
   "/dashboard",
+  "/admin",
+  "/client",
   "/trips",
   "/customers",
   "/vehicles",
@@ -32,14 +34,23 @@ export default withAuth(
     const { pathname } = req.nextUrl;
     const token        = req.nextauth.token;
     const isAuthed     = !!token;
+    const role         = token?.role;
+    const isClientArea = pathname === "/client" || pathname.startsWith("/client/");
+    const homePath     = role === "CLIENT" ? "/client/dashboard" : role === "ADMIN" ? "/admin" : "/dashboard";
 
-    // ── 1. Authenticated user visiting /login → send to dashboard ─────────────
-    if (isAuthed && pathname === "/login") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+    // ── 1. Authenticated users visiting an auth page go to their own home ────
+    if (isAuthed && ["/", "/login", "/signin", "/signup"].includes(pathname)) {
+      return NextResponse.redirect(new URL(homePath, req.url));
     }
 
-    // ── 2. Authenticated user visiting root → send to dashboard ──────────────
-    if (isAuthed && pathname === "/") {
+    // ── 2. Keep client and management areas separated by JWT role ────────────
+    if (isAuthed && role === "CLIENT" && !isClientArea && PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+      return NextResponse.redirect(new URL("/client/dashboard", req.url));
+    }
+    if (isAuthed && role !== "CLIENT" && isClientArea) {
+      return NextResponse.redirect(new URL(homePath, req.url));
+    }
+    if (isAuthed && pathname.startsWith("/admin") && role !== "ADMIN") {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
@@ -52,6 +63,10 @@ export default withAuth(
       const loginUrl = new URL("/login", req.url);
       loginUrl.searchParams.set("callbackUrl", pathname); // restore after login
       return NextResponse.redirect(loginUrl);
+    }
+
+    if (isAuthed && pathname.startsWith("/api/customers") && role === "CLIENT") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // ── 4. Everything else — pass through ─────────────────────────────────────

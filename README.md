@@ -54,7 +54,7 @@ npm install
 ```
 
 ### 2. Database Setup
-Run MongoDB locally, then generate the Prisma Client and sync the schema:
+Run MongoDB locally as a replica set (Prisma's MongoDB connector requires transaction support), then generate the Prisma Client and sync the schema. MongoDB Atlas clusters already provide replica-set support:
 ```bash
 # Push schema updates to the `skyridetour` database
 npx prisma db push
@@ -78,6 +78,18 @@ The local connection string `mongodb://localhost:27017/skyridetour` is only reac
 - `NEXTAUTH_URL`: your deployed application URL
 
 The `postinstall` script generates Prisma Client during Vercel's install/build. Apply schema changes to the hosted database with `npx prisma db push` from a trusted environment using the production `DATABASE_URL`; do not run the seed script against production because it clears existing records.
+
+## Authentication
+
+Visitors can sign in at `/login` or create an account at `/signup`. Public registration validates name, email, phone, and password on the server, stores a bcrypt hash, and always assigns the `CLIENT` role. It does not accept a role from the request. Existing `ADMIN`, `OWNER`, and `MANAGER` accounts are preserved. CLIENT sessions are limited to `/client/dashboard`, which lists only trips associated with the account email or phone; management routes remain available to the existing management roles.
+
+Login and registration attempts are rate-limited using hashed IP/email keys in an automatically TTL-cleaned `auth_rate_limits` MongoDB collection. After deploying schema changes, sync the production schema before enabling registration:
+
+```bash
+npx prisma db push
+```
+
+Set `DATABASE_URL`, `NEXTAUTH_SECRET`, and `NEXTAUTH_URL` in Vercel for each environment where the application runs. If using the one-time OWNER initializer, also set its `SEED_OWNER_EMAIL`, `SEED_OWNER_PASSWORD`, and `OWNER_INIT_TOKEN` only until the initial owner is created. Never expose these values as `NEXT_PUBLIC_*` variables.
 
 ### Initial Owner Account
 

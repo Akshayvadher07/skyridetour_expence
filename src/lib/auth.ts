@@ -6,6 +6,7 @@
 import { NextAuthOptions, DefaultSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { verifyPassword } from "@/lib/auth-utils";
+import { clearRateLimit, consumeRateLimit, getClientIp } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import type { UserRole } from "@prisma/client";
 
@@ -17,6 +18,7 @@ declare module "next-auth" {
       id:    string;
       name:  string | null;
       email: string | null;
+      phone: string | null;
       role:  UserRole;
     } & DefaultSession["user"];
   }
@@ -24,6 +26,7 @@ declare module "next-auth" {
   interface User {
     id:   string;
     role: UserRole;
+    phone: string | null;
   }
 }
 
@@ -33,6 +36,7 @@ declare module "next-auth/jwt" {
     email: string;
     name:  string;
     role:  UserRole;
+    phone: string | null;
   }
 }
 
@@ -65,21 +69,27 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
 
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
 
         const email = credentials.email.toLowerCase().trim();
+        const ip = getClientIp(request.headers?.["x-real-ip"] ?? request.headers?.["x-forwarded-for"]);
 
         // ── 1. Query database for user account ─────────────────────────────
         try {
-          const user = await prisma.user.findUnique({
-            where: { email },
+          const ipAllowed = await consumeRateLimit("login-ip", ip, 30, 15 * 60 * 1000);
+          const emailAllowed = await consumeRateLimit("login-email", email, 10, 15 * 60 * 1000);
+          if (!ipAllowed || !emailAllowed) return null;
+
+          const user = await prisma.user.findFirst({
+            where: { email: { equals: email, mode: "insensitive" } },
             select: {
               id:           true,
               name:         true,
               email:        true,
+              phone:        true,
               role:         true,
               passwordHash: true,
             },
@@ -92,10 +102,12 @@ export const authOptions: NextAuthOptions = {
             );
 
             if (isValid) {
+              await clearRateLimit("login-email", email, 15 * 60 * 1000);
               return {
                 id:    user.id,
                 name:  user.name,
                 email: user.email,
+                phone: user.phone,
                 role:  user.role,
               };
             }
@@ -121,6 +133,7 @@ export const authOptions: NextAuthOptions = {
         token.name  = user.name  ?? "";
         token.email = user.email ?? "";
         token.role  = user.role;
+        token.phone = user.phone ?? null;
       }
       return token;
     },
@@ -131,6 +144,7 @@ export const authOptions: NextAuthOptions = {
         session.user.name  = token.name;
         session.user.email = token.email;
         session.user.role  = token.role;
+        session.user.phone = token.phone;
       }
       return session;
     },

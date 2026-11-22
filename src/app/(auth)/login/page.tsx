@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { signIn }            from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useForm }           from "react-hook-form";
 import { zodResolver }       from "@hookform/resolvers/zod";
 import { z }                 from "zod";
@@ -84,7 +85,13 @@ function LoginForm() {
       }
 
       toast.success("Welcome back!", { description: "Redirecting to your dashboard…" });
-      router.push(result.url ?? callbackUrl);
+      const session = await getSession();
+      const dashboardUrl = session?.user?.role === "CLIENT"
+        ? "/client/dashboard"
+        : session?.user?.role === "ADMIN"
+          ? "/admin"
+          : result.url ?? callbackUrl;
+      router.push(dashboardUrl);
       router.refresh();
     } catch {
       setAuthError("Something went wrong. Please try again.");
@@ -121,7 +128,7 @@ function LoginForm() {
           <Shield className="w-4 h-4 text-[var(--primary)]" />
           <div>
             <h2 className="text-lg font-semibold text-white leading-tight">Sign in to your account</h2>
-            <p className="text-white/40 text-xs">Owner &amp; Manager access only</p>
+            <p className="text-white/40 text-xs">Secure access for your SkyRideTour account</p>
           </div>
         </div>
 
@@ -251,6 +258,13 @@ function LoginForm() {
           </button>
         </form>
       </motion.div>
+
+      <p className="text-center text-sm text-white/55 mt-5">
+        New to SkyRideTour?{" "}
+        <Link href="/signup" className="font-semibold text-[var(--primary)] hover:underline">
+          Create an account
+        </Link>
+      </p>
 
       {/* Footer */}
       <motion.p

@@ -9,5 +9,5 @@ export default async function Home() {
     redirect("/login");
   }
 
-  redirect("/dashboard");
+  redirect(session.user.role === "CLIENT" ? "/client/dashboard" : session.user.role === "ADMIN" ? "/admin" : "/dashboard");
 }
