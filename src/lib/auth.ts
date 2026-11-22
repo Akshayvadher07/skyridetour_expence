@@ -100,8 +100,12 @@ export const authOptions: NextAuthOptions = {
               };
             }
           }
-        } catch (err) {
-          console.error("[AUTH] Database query error in authorize:", err);
+        } catch (error) {
+          console.error(
+            "[AUTH] Database query failed during authorize:",
+            error instanceof Error ? error.name : "UnknownError"
+          );
+          throw new Error("Authentication service temporarily unavailable.");
         }
 
         return null; // Maps to "CredentialsSignin" error on client

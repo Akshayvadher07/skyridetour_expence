@@ -29,7 +29,7 @@ const AUTH_ERRORS: Record<string, string> = {
   OAuthCallback:        "Authentication failed. Please try again.",
   OAuthCreateAccount:   "Could not create account. Please try again.",
   EmailCreateAccount:   "Could not create account. Please try again.",
-  Callback:             "Authentication callback error.",
+  Callback:             "Sign-in service is temporarily unavailable. Please try again later.",
   OAuthAccountNotLinked:"Account already exists with a different sign-in method.",
   SessionRequired:      "Please sign in to access this page.",
   default:              "An error occurred during sign in.",
